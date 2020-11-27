@@ -105,7 +105,7 @@ class AppURI
                             ? ', tls=true'
                             : '');
                         $ws = ($item['net'] == 'ws'
-                            ? ', ws=true, ws-path=' . $item['path'] . ', ws-headers=host:' . $item['host']
+                            ? ', ws=true, ws-path=' . $item['path']. ', sni=' . $item['host'] . ', ws-headers=host:' . $item['host']
                             : '');
                         $return = $item['remark'] . ' = vmess, ' . $item['add'] . ', ' . $item['port'] . ', username = ' . $item['id'] . $ws . $tls;
                         break;
