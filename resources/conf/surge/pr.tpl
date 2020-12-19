@@ -1177,6 +1177,7 @@ DOMAIN,download.jetbrains.com,DIRECT
 # RULE-SET,https://github.com/NobyDa/Script/raw/master/Surge/AdRuleRegex.list,REJECT
 # RULE-SET,https://github.com/NobyDa/Script/raw/master/Surge/AdRuleTest.list,REJECT
 # RULE-SET,https://github.com/NobyDa/Script/raw/master/Surge/AdRule.list,REJECT
+RULE-SET,https://anti-ad.net/surge.txt,REJECT
 DOMAIN,images-cn.ssl-images-amazon.com,DIRECT
 IP-CIDR,119.28.28.28/32,DIRECT,no-resolve
 GEOIP,CN,DIRECT
