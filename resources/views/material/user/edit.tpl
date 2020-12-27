@@ -22,14 +22,9 @@
                                         点击拷贝
                                     </button>
                                 </p>
-                                <!--<div class="form-group form-group-label">
-                                    <label class="floating-label" for="sspwd">新连接密码</label>
-                                    <input class="form-control maxwidth-edit" id="sspwd" type="text">
-                                </div>
-                                <br>-->
-                                <p>为了确保您的安全，节点连接密码不允许自定义，点击提交按钮将会自动生成由随机字母和数字组成的连接密码。</p>
-                                <p>修改连接密码同时也会自动为您重新生成 V2Ray 节点的 UUID。</p>
-                                <p>修改密码后，请立刻更新各个客户端上的连接信息。</p>
+                                <p>点击重置按钮将会自动生成由随机字母和数字组成的连接密码。</p>
+                                <p>修改连接密码同时也会自动为您重新生成 V2Ray 和 Trojan 节点的 UUID。</p>
+                                <p>修改连接密码后，您需要更新订阅或修改客户端配置方可继续使用。</p>
                             </div>
                         </div>
                     </div>
@@ -133,7 +128,7 @@
 										<a class="reset-link btn btn-brand-accent btn-flat" ><i class="icon">autorenew</i>&nbsp;</a>
 									</div>
 								</div>
-                                <p>点击会重置您的订阅链接，此操作不可逆，请谨慎。</p>
+                                <p>点击会重置您的订阅链接，您需要更新客户端中所配置的订阅地址方可继续使用。</p>
 							</div>
 						</div>
 					</div>
@@ -908,19 +903,15 @@
 </script>
 <script>
     $(document).ready(function () {
-        let newsspwd = Math.random().toString(36).substr(2);
         $("#ss-pwd-update").click(function () {
             $.ajax({
                 type: "POST",
                 url: "sspwd",
                 dataType: "json",
-                data: {
-                    sspwd: newsspwd
-                },
+                data: {},
                 success: (data) => {
                     if (data.ret) {
                         $("#result").modal();
-                        $$.getElementById('ajax-user-passwd').innerHTML = newsspwd;
                         $$.getElementById('msg').innerHTML = '修改成功';
                     } else {
                         $("#result").modal();
@@ -929,7 +920,7 @@
                 },
                 error: (jqXHR) => {
                     $("#result").modal();
-                    $$.getElementById('msg').innerHTML = `${data.msg} 出现了一些错误`;
+                    $$.getElementById('msg').innerHTML = data.msg;
                 }
             })
         })

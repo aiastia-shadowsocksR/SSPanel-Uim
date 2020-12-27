@@ -52,6 +52,7 @@ use App\Utils\{
 };
 use voku\helper\AntiXSS;
 use Exception;
+use Ramsey\Uuid\Uuid;
 
 /**
  *  HomeController
@@ -798,7 +799,7 @@ class UserController extends BaseController
         return $response->getBody()->write(json_encode($res));
     }
 
-    public function buy_traffic_package ($request, $response, $args)
+    public function buy_traffic_package($request, $response, $args)
     {
         $user = $this->user;
         $shop = $request->getParam('shop');
@@ -811,9 +812,7 @@ class UserController extends BaseController
             return $response->getBody()->write(json_encode($res));
         }
 
-        $content = json_decode($shop->content);
-
-        if ($user->class < $content->traffic_package->class->min || $user->class > $content->traffic_package->class->max) {
+        if ($user->class < $shop->content['traffic_package']['class']['min'] || $user->class > $shop->content['traffic_package']['class']['max']) {
             $res['ret'] = 0;
             $res['msg'] = '您当前的会员等级无法购买此流量包';
             return $response->getBody()->write(json_encode($res));
@@ -862,14 +861,9 @@ class UserController extends BaseController
         $shop = Shop::where('id', $shop)->where('status', 1)->first();
 
         $orders = Bought::where('userid', $this->user->id)->get();
-        foreach ($orders as $order)
-        {
-            $shop_item = Shop::where('id',$order['shopid'])->first();
-            $shop_item = json_decode($shop_item['content']);
-            $shop_item->datetime = $order['datetime'];
-            if (property_exists($shop_item,'reset') || property_exists($shop_item,'reset_value') || property_exists($shop_item,'reset_exp'))
-            {
-                if (time() < ($shop_item->datetime + $shop_item->reset_exp * 86400) ) {
+        foreach ($orders as $order) {
+            if ($order->shop()->use_loop()) {
+                if ($order->valid()) {
                     $res['ret'] = 0;
                     $res['msg'] = '您购买的含有自动重置系统的套餐还未过期，无法购买新套餐';
                     return $response->getBody()->write(json_encode($res));
@@ -1181,21 +1175,29 @@ class UserController extends BaseController
     public function updateSsPwd($request, $response, $args)
     {
         $user = Auth::getUser();
-        $pwd = $request->getParam('sspwd');
-        $pwd = trim($pwd);
+        $pwd = Tools::genRandomChar(6);
+        $current_timestamp = time();
+        $new_uuid = Uuid::uuid3(Uuid::NAMESPACE_DNS, $user->email . '|' . $current_timestamp);
+        $otheruuid = User::where('uuid', $new_uuid)->first();
 
         if ($pwd == '') {
             $res['ret'] = 0;
             $res['msg'] = '密码不能为空';
             return $response->getBody()->write(json_encode($res));
         }
-
         if (!Tools::is_validate($pwd)) {
             $res['ret'] = 0;
             $res['msg'] = '密码无效';
             return $response->getBody()->write(json_encode($res));
         }
+        if ($otheruuid != null) {
+            $res['ret'] = 0;
+            $res['msg'] = '目前出现一些问题，请稍后再试';
+            return $response->getBody()->write(json_encode($res));
+        }
 
+        $user->uuid = $new_uuid;
+        $user->save();
         $user->updateSsPwd($pwd);
         $res['ret'] = 1;
 

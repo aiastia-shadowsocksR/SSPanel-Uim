@@ -9,6 +9,7 @@ use App\Utils\GA;
 use App\Utils\Hash;
 use App\Utils\Tools;
 use Exception;
+use Ramsey\Uuid\Uuid;
 
 class User extends Command
 {
@@ -19,6 +20,7 @@ class User extends Command
         . '│ ├─ createAdmin             - 创建管理员帐号' . PHP_EOL
         . '│ ├─ resetAllPort            - 重置所有用户端口' . PHP_EOL
         . '│ ├─ resetTraffic            - 重置所有用户流量' . PHP_EOL
+        . '│ ├─ generateUUID            - 为所有用户生成新的UUID' . PHP_EOL
         . '│ ├─ cleanRelayRule          - 清除所有中转规则' . PHP_EOL;
 
     public function boot()
@@ -97,6 +99,25 @@ class User extends Command
     }
 
     /**
+     * 为所有用户生成新的UUID
+     *
+     * @return void
+     */
+    public function generateUUID()
+    {
+        $users = ModelsUser::all();
+        $current_timestamp = time();
+        foreach ($users as $user) {
+            $user->uuid = Uuid::uuid3(
+                Uuid::NAMESPACE_DNS,
+                $user->email . '|' . $current_timestamp
+            );
+            $user->save();
+        }
+        echo 'generate UUID successful' . PHP_EOL;
+    }
+
+    /**
      * 清理所有中转规则
      *
      * @return void
@@ -146,6 +167,7 @@ class User extends Command
 
         if (strtolower($y) == 'y') {
             echo 'start create admin account';
+            $current_timestamp          = time();
             // create admin user
             // do reg user
             $user                   = new ModelsUser();
@@ -153,6 +175,7 @@ class User extends Command
             $user->email            = $email;
             $user->pass             = Hash::passwordHash($passwd);
             $user->passwd           = Tools::genRandomChar(6);
+            $user->uuid             = Uuid::uuid3(Uuid::NAMESPACE_DNS, $email . '|' . $current_timestamp);
             $user->port             = Tools::getLastPort() + 1;
             $user->t                = 0;
             $user->u                = 0;
