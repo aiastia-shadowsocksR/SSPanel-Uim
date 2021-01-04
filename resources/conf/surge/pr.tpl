@@ -1201,8 +1201,8 @@ surge%20pixiv%20premium.js = requires-body=1,max-size=0,script-path=https://gith
 surge%20pixiv%20search.js = script-path=https://github.com/onewayticket255/Surge-Script/raw/85297614e8471fd746da8a71f2f659a3a5221046/surge%20pixiv%20search.js,script-update-interval=-1,pattern=https://app-api.pixiv.net/v1/search.*popular,type=http-request
 Lightroom.js = requires-body=1,script-path=https://raw.githubusercontent.com/primovist/ScriptsForSurge/master/Scripts/Lightroom.js,pattern=^https://photos.adobe.io/v2/accounts,type=http-response
 Photoshop.js = requires-body=1,script-path=https://raw.githubusercontent.com/primovist/ScriptsForSurge/master/Scripts/Photoshop.js,pattern=^https://lcs-mobile-cops.adobe.io/mobile_profile/nul/v1,type=http-response
-JD_DailyBonus.js = type=cron,cronexp=30 10 * * *,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js,script-update-interval=0
-JD_DailyBonus.js = max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js,pattern=https:\/\/api\.m\.jd\.com\/client\.action.*functionId=signBean(Index|GroupStageIndex),type=http-request
+#JD_DailyBonus.js = type=cron,cronexp=30 10 * * *,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js,script-update-interval=0
+#JD_DailyBonus.js = max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js,pattern=https:\/\/api\.m\.jd\.com\/client\.action.*functionId=signBean(Index|GroupStageIndex),type=http-request
 jd_price.js = requires-body=1,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/jd_price.js,type=http-response,pattern=^https?://api\.m\.jd\.com/client\.action\?functionId=(wareBusiness|serverConfig|basicConfig)
 wps.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.cookie.js,type=http-request,pattern=^https:\/\/zt.wps.cn\/2018\/docer_check_in\/api\/act_list
 wps.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js,type=cron,cronexp=30 10 * * *
@@ -1212,3 +1212,5 @@ wps.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master
 10010.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js,type=http-request,pattern=^https?:\/\/act.10010.com\/SigninApp(.*?)\/signin\/daySign
 10010.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js,type=http-request,pattern=^https?:\/\/m.client.10010.com\/dailylottery\/static\/(textdl\/userLogin|active\/findActivityInfo)
 10010.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.js,type=cron,cronexp=30 10 * * *
+京东多合一签到 = type=cron,cronexp=30 8 * * *,wake-system=1,timeout=60,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js
+获取京东Cookie = type=http-request,pattern=https:\/\/api\.m\.jd\.com\/client\.action.*functionId=signBean,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js
