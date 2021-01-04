@@ -1205,10 +1205,10 @@ JD_DailyBonus.js = type=cron,cronexp=30 10 * * *,script-path=https://raw.githubu
 JD_DailyBonus.js = max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js,pattern=https:\/\/api\.m\.jd\.com\/client\.action.*functionId=signBean(Index|GroupStageIndex),type=http-request
 jd_price.js = requires-body=1,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/jd_price.js,type=http-response,pattern=^https?://api\.m\.jd\.com/client\.action\?functionId=(wareBusiness|serverConfig|basicConfig)
 wps.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.cookie.js,type=http-request,pattern=^https:\/\/zt.wps.cn\/2018\/docer_check_in\/api\/act_list
-wps.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js,type=cron,cronexp=10 0 0 * * *
+wps.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js,type=cron,cronexp=30 10 * * *
 10000.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.cookie.js,requires-body=true,type=http-request,pattern=^https:\/\/wapside.189.cn:9001\/api\/home\/homeInfo
-10000.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.js,type=cron,cronexp=10 0 0 * * *
+10000.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.js,type=cron,cronexp=30 10 * * *
 10010.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js,type=http-request,pattern=^https?:\/\/act.10010.com\/SigninApp\/signin\/querySigninActivity.htm
 10010.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js,type=http-request,pattern=^https?:\/\/act.10010.com\/SigninApp(.*?)\/signin\/daySign
 10010.cookie.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js,type=http-request,pattern=^https?:\/\/m.client.10010.com\/dailylottery\/static\/(textdl\/userLogin|active\/findActivityInfo)
-10010.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.js,type=cron,cronexp=10 0 0 * * *
+10010.js = script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.js,type=cron,cronexp=30 10 * * *
