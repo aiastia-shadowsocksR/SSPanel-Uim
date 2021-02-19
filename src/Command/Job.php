@@ -205,7 +205,7 @@ class Job extends Command
             }
         }
 
-        $qqwry = file_get_contents('https://qqwry.mirror.noc.one/QQWry.Dat?from=sspanel_uim');
+        $qqwry = file_get_contents('http://qqwry.mirror.noc.one/QQWry.Dat?from=sspanel_uim');
         if ($qqwry != '') {
             rename(BASE_PATH . '/storage/qqwry.dat', BASE_PATH . '/storage/qqwry.dat.bak');
             $fp = fopen(BASE_PATH . '/storage/qqwry.dat', 'wb');
