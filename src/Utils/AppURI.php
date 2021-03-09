@@ -95,7 +95,7 @@ class AppURI
                         if ($item['obfs'] == 'v2ray') {
                             break;
                         }
-                        $return = ($item['remark'] . ' = ss, ' . $item['address'] . ', ' . $item['port'] . ', encrypt-method=' . $item['method'] . ', password=' . $item['passwd'] . URL::getSurgeObfs($item) . ', udp-relay=true');
+                        $return = ($item['remark'] . ' = ss, ' . $item['address'] . ', ' . $item['port'] . ', encrypt-method=' . $item['method'] . ', password=' . $item['passwd'] . URL::getSurgeObfs($item) . ':, udp-relay=true');
                         break;
                     case 'vmess':
                         if (!in_array($item['net'], ['ws', 'tcp'])) {
