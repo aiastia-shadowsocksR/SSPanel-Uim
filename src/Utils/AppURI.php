@@ -176,7 +176,7 @@ class AppURI
                         $return .= ', obfs-uri=/';
                         break;
                     case 'simple_obfs_tls':
-                        $return .= ', obfs=tls';
+                        $return .= ':, obfs=tls';
                         $return .= ($item['obfs_param'] != '' ? ', obfs-host=' . $item['obfs_param'] : ', obfs-host=wns.windows.com');
                         break;
                     case 'v2ray';
