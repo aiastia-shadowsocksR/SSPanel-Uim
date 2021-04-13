@@ -21,12 +21,10 @@ use App\Models\DetectBanLog;
 use App\Models\EmailQueue;
 use App\Models\NodeInfoLog;
 use App\Models\NodeOnlineLog;
-use App\Models\TelegramTasks;
 use App\Models\TelegramSession;
 use App\Models\UserSubscribeLog;
 use App\Services\Config;
 use App\Services\Mail;
-use App\Utils\GA;
 use App\Utils\QQWry;
 use App\Utils\Telegram\TelegramTools;
 use App\Utils\Tools;
@@ -40,10 +38,8 @@ class Job extends Command
 {
     public $description = ''
         . '├─=: php xcat Job [选项]' . PHP_EOL
-        . '│ ├─ UserGa                  - 二次验证' . PHP_EOL
         . '│ ├─ DailyJob                - 每日任务' . PHP_EOL
-        . '│ ├─ CheckJob                - 检查任务，每分钟' . PHP_EOL
-        . '│ ├─ updatedownload          - 检查客户端更新' . PHP_EOL;
+        . '│ ├─ CheckJob                - 检查任务，每分钟' . PHP_EOL;
 
     public function boot()
     {
@@ -222,8 +218,6 @@ class Job extends Command
             unlink(BASE_PATH . '/storage/qqwry.dat');
             rename(BASE_PATH . '/storage/qqwry.dat.bak', BASE_PATH . '/storage/qqwry.dat');
         }
-
-        $this->updatedownload();
     }
 
     /**
@@ -495,56 +489,6 @@ class Job extends Command
             echo '节点掉线检测结束' . PHP_EOL;
         }
 
-
-        //登录地检测
-        if ($_ENV['login_warn'] == true) {
-            echo '异常登录检测开始' . PHP_EOL;
-            $iplocation = new QQWry();
-            $Logs = LoginIp::where('datetime', '>', time() - 60)->get();
-            foreach ($Logs as $log) {
-                $UserLogs = LoginIp::where('userid', '=', $log->userid)->orderBy('id', 'desc')->take(2)->get();
-                if ($UserLogs->count() == 2) {
-                    $i = 0;
-                    $Userlocation = '';
-                    foreach ($UserLogs as $userlog) {
-                        if ($i == 0) {
-                            $location = $iplocation->getlocation($userlog->ip);
-                            $ip = $userlog->ip;
-                            $Userlocation = $location['country'];
-                            $i++;
-                        } else {
-                            $location = $iplocation->getlocation($userlog->ip);
-                            $nodes = Node::where('node_ip', 'LIKE', $ip . '%')->first();
-                            $nodes2 = Node::where('node_ip', 'LIKE', $userlog->ip . '%')->first();
-                            if ($Userlocation != $location['country'] && $nodes == null && $nodes2 == null) {
-                                $user = User::where('id', '=', $userlog->userid)->first();
-                                echo 'Send warn mail to user: ' . $user->id . '-' . iconv(
-                                    'gbk',
-                                    'utf-8//IGNORE',
-                                    $Userlocation
-                                ) . '-' . iconv('gbk', 'utf-8//IGNORE', $location['country']);
-                                $text = '您好，系统发现您的账号在 ' . iconv(
-                                    'gbk',
-                                    'utf-8//IGNORE',
-                                    $Userlocation
-                                ) . ' 有异常登录，请您自己自行核实登录行为。有异常请及时修改密码。';
-                                $user->sendMail(
-                                    $_ENV['appName'] . '-系统警告',
-                                    'news/warn.tpl',
-                                    [
-                                        'text' => $text
-                                    ],
-                                    [],
-                                    $_ENV['email_queue']
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-            echo '异常登录检测结束' . PHP_EOL;
-        }
-
         $users = User::all();
         foreach ($users as $user) {
             if (($user->transfer_enable <= $user->u + $user->d || $user->enable == 0 || (strtotime(
@@ -764,55 +708,5 @@ class Job extends Command
         $datatables->query(
             'DELETE FROM `relay` WHERE `source_node_id` NOT IN(' . $allNodeID . ') OR `dist_node_id` NOT IN(' . $allNodeID . ')'
         );       
-    }
-
-    /**
-     * Telegram 任务
-     */
-    public function Telegram(): void
-    {
-        # 删除 tg 消息
-        $TelegramTasks = TelegramTasks::where('type', 1)->where('executetime', '<', time())->get();
-        foreach ($TelegramTasks as $Task) {
-            TelegramTools::SendPost(
-                'deleteMessage',
-                ['chat_id' => $Task->chatid, 'message_id' => $Task->messageid]
-            );
-            TelegramTasks::where('chatid', $Task->chatid)->where('type', '<>', 1)->where(
-                'messageid',
-                $Task->messageid
-            )->delete();
-            $Task->delete();
-        }
-    }
-
-    /**
-     * 定时任务开启的情况下，每天自动检测有没有最新版的后端，github源来自Miku
-     *
-     * @return void
-     */
-    public function updatedownload()
-    {
-        system(
-            'cd ' . BASE_PATH . '/public/ssr-download/ && git pull https://github.com/xcxnig/ssr-download.git --rebase && git gc'
-        );
-    }
-
-    /**
-     * 二次验证
-     *
-     * @return void
-     */
-    public function UserGa()
-    {
-        $users = User::all();
-        foreach ($users as $user) {
-            $ga = new GA();
-            $secret = $ga->createSecret();
-
-            $user->ga_token = $secret;
-            $user->save();
-        }
-        echo 'ok';
     }
 }
