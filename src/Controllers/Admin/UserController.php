@@ -7,7 +7,6 @@ use App\Models\{
     Ip,
     User,
     Shop,
-    Relay,
     Bought,
     DetectBanLog
 };
@@ -21,7 +20,6 @@ use App\Utils\{
     Hash,
     Tools,
     QQWry,
-    Radius,
     Cookie
 };
 use Exception;
@@ -326,8 +324,6 @@ class UserController extends AdminController
 
         $passwd = $request->getParam('passwd');
 
-        Radius::ChangeUserName($email1, $email2, $passwd);
-
         if ($request->getParam('pass') != '') {
             $user->pass = Hash::passwordHash($request->getParam('pass'));
             $user->clean_link();
@@ -337,12 +333,6 @@ class UserController extends AdminController
         $user->auto_reset_bandwidth = $request->getParam('auto_reset_bandwidth');
         $origin_port = $user->port;
         $user->port = $request->getParam('port');
-
-        $relay_rules = Relay::where('user_id', $user->id)->where('port', $origin_port)->get();
-        foreach ($relay_rules as $rule) {
-            $rule->port = $user->port;
-            $rule->save();
-        }
 
         $user->addMoneyLog($request->getParam('money') - $user->money);
 

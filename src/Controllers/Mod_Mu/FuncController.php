@@ -6,7 +6,6 @@ use App\Controllers\BaseController;
 use App\Models\{
     Auto,
     Node,
-    Relay,
     BlockIp,
     UnblockIp,
     Speedtest,
@@ -43,47 +42,6 @@ class FuncController extends BaseController
         }
 
         return $node;
-    }
-
-    public function get_relay_rules($request, $response, $args)
-    {
-        $params = $request->getQueryParams();
-        $node_id = $params['node_id'];
-        if ($node_id == '0') {
-            $node = Node::where('node_ip', $_SERVER['REMOTE_ADDR'])->first();
-            $node_id = $node->id;
-        } else {
-            $node = Node::where('id', $node_id)->first();
-        }
-        $rules = Relay::Where('source_node_id', $node_id)->get();
-        if (count($rules) > 0) {
-            if ($rules[0]['dist_node_id'] == -1) {
-                $server = null;
-            }
-            foreach ($rules as $rule) {
-                $dis = $this->get_dis_node_info($rule['dist_node_id']);
-                if ($dis != null) {
-                    $rule['source_node_sort'] = $node->sort;
-                    $rule['dist_node_sort'] = $dis->sort;
-                    $rule['dist_node_server'] = $dis->server;
-                } else {
-                    $rule['source_node_sort'] = $node->sort;
-                    $rule['dist_node_sort'] = null;
-                    $rule['dist_node_server'] = null;
-                }
-            }
-            $res = [
-                'ret' => 1,
-                'data' => $rules,
-            ];
-        } else {
-            $res = [
-                'ret' => 1,
-                'data' => array(),
-            ];
-        }
-
-        return $this->echoJson($response, $res);
     }
 
     public function get_blockip($request, $response, $args)
@@ -187,78 +145,6 @@ class FuncController extends BaseController
                 $speedtest_log->nodeid = $node_id;
                 $speedtest_log->datetime = time();
                 $speedtest_log->save();
-            }
-        }
-
-        $res = [
-            'ret' => 1,
-            'data' => 'ok',
-        ];
-        return $this->echoJson($response, $res);
-    }
-
-    public function get_autoexec($request, $response, $args)
-    {
-        $params = $request->getQueryParams();
-
-        $node_id = $params['node_id'];
-        if ($node_id == '0') {
-            $node = Node::where('node_ip', $_SERVER['REMOTE_ADDR'])->first();
-            $node_id = $node->id;
-        }
-        $node = Node::find($node_id);
-        if ($node == null) {
-            $res = [
-                'ret' => 0
-            ];
-            return $this->echoJson($response, $res);
-        }
-
-        $autos_raw = Auto::where('datetime', '>', time() - 60)->where('type', '1')->get();
-
-        $autos = array();
-
-        foreach ($autos_raw as $auto_raw) {
-            $has_exec = Auto::where('sign', $node_id . '-' . $auto_raw->id)->where('type', '2')->first();
-            if ($has_exec == null) {
-                $autos[] = $auto_raw;
-            }
-        }
-
-        $res = [
-            'ret' => 1,
-            'data' => $autos,
-        ];
-        return $this->echoJson($response, $res);
-    }
-
-    public function addAutoexec($request, $response, $args)
-    {
-        $params = $request->getQueryParams();
-
-        $data = $request->getParam('data');
-        $node_id = $params['node_id'];
-        if ($node_id == '0') {
-            $node = Node::where('node_ip', $_SERVER['REMOTE_ADDR'])->first();
-            $node_id = $node->id;
-        }
-        $node = Node::find($node_id);
-        if ($node == null) {
-            $res = [
-                'ret' => 0
-            ];
-            return $this->echoJson($response, $res);
-        }
-
-        if (count($data) > 0) {
-            foreach ($data as $log) {
-                // log
-                $auto_log = new Auto();
-                $auto_log->value = $log['value'];
-                $auto_log->sign = $log['sign'];
-                $auto_log->type = $log['type'];
-                $auto_log->datetime = time();
-                $auto_log->save();
             }
         }
 

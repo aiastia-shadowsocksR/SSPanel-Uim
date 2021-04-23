@@ -44,14 +44,14 @@ class ClientDownload extends Command
         //     ],
         // ],
         [
-            'name'      => 'ShadowsocksrC#',
+            'name'      => 'ShadowsocksR-Windows',
             'tagMethod' => 'github_release',
-            'gitRepo'   => 'shadowsocksrr/shadowsocksr-csharp',
+            'gitRepo'   => 'HMBSbige/ShadowsocksR-Windows',
             'savePath'  => 'public/clients/',
             'downloads' => [
                 [
-                    'sourceName' => 'ShadowsocksR-win-%tagName%.zip',
-                    'saveName'   => 'ssr-win.zip',
+                    'sourceName' => 'ShadowsocksR-%tagName%.7z',
+                    'saveName'   => 'ssr-win.7z',
                     'apkpureUrl' => ''
                 ]
             ],
@@ -90,19 +90,6 @@ class ClientDownload extends Command
                     'saveName'   => 'Clash-Windows-arm64.dmg',
                     'apkpureUrl' => ''
                 ]
-            ],
-        ],
-        [
-            'name'      => 'ClashRforWindows',
-            'tagMethod' => 'github_release',
-            'gitRepo'   => 'BROBIRD/clash',
-            'savePath'  => 'public/clients/',
-            'downloads' => [
-                [
-                    'sourceName' => 'clash-windows-amd64-%tagName%.zip',
-                    'saveName'   => 'ClashR-Windows.zip',
-                    'apkpureUrl' => ''
-                ],
             ],
         ],
         [
@@ -208,6 +195,7 @@ class ClientDownload extends Command
                 ],
             ],
         ],
+        /*
         [
             'name'      => 'Surfboard',
             'tagMethod' => 'apkpure',
@@ -221,6 +209,7 @@ class ClientDownload extends Command
                 ],
             ],
         ],
+        */
         [
             'name'      => 'ClashforAndroid',
             'tagMethod' => 'github_pre_release',
@@ -248,14 +237,14 @@ class ClientDownload extends Command
             ],
         ],
         [
-            'name'      => 'ShadowsocksRRAndroid',
+            'name'      => 'ShadowsocksR-Android',
             'tagMethod' => 'github_release',
-            'gitRepo'   => 'shadowsocksrr/shadowsocksr-android',
+            'gitRepo'   => 'HMBSbige/ShadowsocksR-Android',
             'savePath'  => 'public/clients/',
             'downloads' => [
                 [
                     'sourceName' => 'shadowsocksr-android-%tagName%.apk',
-                    'saveName'   => 'ssrr-android.apk',
+                    'saveName'   => 'ssr-android.apk',
                     'apkpureUrl' => ''
                 ],
             ],

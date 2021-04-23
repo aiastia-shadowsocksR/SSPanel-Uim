@@ -108,19 +108,6 @@ class Config
         ];
     }
 
-    public static function getRadiusDbConfig()
-    {
-        return [
-            'driver'    => $_ENV['db_driver'],
-            'host'      => $_ENV['radius_db_host'],
-            'database'  => $_ENV['radius_db_database'],
-            'username'  => $_ENV['radius_db_user'],
-            'password'  => $_ENV['radius_db_password'],
-            'charset'   => $_ENV['db_charset'],
-            'collation' => $_ENV['db_collation']
-        ];
-    }
-
     public static function getMuKey()
     {
         $muKeyList = array_key_exists('muKeyList', $_ENV) ? $_ENV['muKeyList'] : ['　'];
@@ -165,18 +152,6 @@ class Config
                 return $list;
             case 'allow_none_protocol':
                 $list = array(
-                    'auth_chain_a',
-                    'auth_chain_b',
-                    'auth_chain_c',
-                    'auth_chain_d',
-                    'auth_chain_e',
-                    'auth_chain_f'
-                );
-                return $list;
-            case 'relay_able_protocol':
-                $list = array(
-                    'auth_aes128_md5',
-                    'auth_aes128_sha1',
                     'auth_chain_a',
                     'auth_chain_b',
                     'auth_chain_c',

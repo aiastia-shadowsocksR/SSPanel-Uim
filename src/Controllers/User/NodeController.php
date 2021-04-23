@@ -5,13 +5,11 @@ namespace App\Controllers\User;
 use App\Controllers\UserController;
 use App\Models\{
     Node,
-    User,
-    Relay
+    User
 };
 use App\Utils\{
     URL,
     Tools,
-    Radius,
     DatatablesHelper
 };
 use Slim\Http\{
@@ -34,11 +32,6 @@ class NodeController extends UserController
     {
         $user        = $this->user;
         $nodes       = Node::where('type', 1)->orderBy('node_class')->orderBy('name')->get();
-        $relay_rules = Relay::where('user_id', $this->user->id)->orwhere('user_id', 0)->orderBy('id', 'asc')->get();
-
-        if (!Tools::is_protocol_relay($user)) {
-            $relay_rules = [];
-        }
 
         $db = new DatatablesHelper();
         $infoLogs = $db->query('SELECT * FROM ( SELECT * FROM `ss_node_info` WHERE log_time > ' . (time() - 300) . ' ORDER BY id DESC LIMIT 999999999999 ) t GROUP BY node_id ORDER BY id DESC');
@@ -137,7 +130,6 @@ class NodeController extends UserController
             $this->view()
                 ->assign('nodes', $array_nodes)
                 ->assign('nodes_muport', $nodes_muport)
-                ->assign('relay_rules', $relay_rules)
                 ->assign('tools', new Tools())
                 ->assign('user', $user)
                 ->registerClass('URL', URL::class)
@@ -174,7 +166,6 @@ class NodeController extends UserController
         $user          = $this->user;
         $id            = $args['id'];
         $mu            = $request->getQueryParams()['ismu'];
-        $relay_rule_id = $request->getQueryParams()['relay_rule'];
         $node          = Node::find($id);
         if ($node == null) {
             return null;
@@ -183,45 +174,12 @@ class NodeController extends UserController
         switch ($node->sort) {
             case 0:
                 if ((($user->class >= $node->node_class && ($user->node_group == $node->node_group || $node->node_group == 0)) || $user->is_admin) && ($node->node_bandwidth_limit == 0 || $node->node_bandwidth < $node->node_bandwidth_limit)) {
-                    return $this->view()->assign('node', $node)->assign('user', $user)->assign('mu', $mu)->assign('relay_rule_id', $relay_rule_id)->registerClass('URL', URL::class)->display('user/nodeinfo.tpl');
-                }
-                break;
-            case 1:
-                if ($user->class >= $node->node_class && ($user->node_group == $node->node_group || $node->node_group == 0)) {
-                    $email = $this->user->email;
-                    $email = Radius::GetUserName($email);
-                    $json_show = 'VPN 信息<br>地址：' . $node->server . '<br>' . '用户名：' . $email . '<br>密码：' . $this->user->passwd . '<br>支持方式：' . $node->method . '<br>备注：' . $node->info;
-
-                    return $this->view()->assign('json_show', $json_show)->display('user/nodeinfovpn.tpl');
-                }
-                break;
-            case 2:
-                if ($user->class >= $node->node_class && ($user->node_group == $node->node_group || $node->node_group == 0)) {
-                    $email = $this->user->email;
-                    $email = Radius::GetUserName($email);
-                    $json_show = 'SSH 信息<br>地址：' . $node->server . '<br>' . '用户名：' . $email . '<br>密码：' . $this->user->passwd . '<br>支持方式：' . $node->method . '<br>备注：' . $node->info;
-
-                    return $this->view()->assign('json_show', $json_show)->display('user/nodeinfossh.tpl');
-                }
-                break;
-            case 5:
-                if ($user->class >= $node->node_class && ($user->node_group == $node->node_group || $node->node_group == 0)) {
-                    $email = $this->user->email;
-                    $email = Radius::GetUserName($email);
-
-                    $json_show = 'Anyconnect 信息<br>地址：' . $node->server . '<br>' . '用户名：' . $email . '<br>密码：' . $this->user->passwd . '<br>支持方式：' . $node->method . '<br>备注：' . $node->info;
-
-                    return $this->view()->assign('json_show', $json_show)->display('user/nodeinfoanyconnect.tpl');
-                }
-                break;
-            case 10:
-                if ((($user->class >= $node->node_class && ($user->node_group == $node->node_group || $node->node_group == 0)) || $user->is_admin) && ($node->node_bandwidth_limit == 0 || $node->node_bandwidth < $node->node_bandwidth_limit)) {
-                    return $this->view()->assign('node', $node)->assign('user', $user)->assign('mu', $mu)->assign('relay_rule_id', $relay_rule_id)->registerClass('URL', URL::class)->display('user/nodeinfo.tpl');
+                    return $this->view()->assign('node', $node)->assign('user', $user)->assign('mu', $mu)->registerClass('URL', URL::class)->display('user/nodeinfo.tpl');
                 }
                 break;
             case 13:
                 if ((($user->class >= $node->node_class && ($user->node_group == $node->node_group || $node->node_group == 0)) || $user->is_admin) && ($node->node_bandwidth_limit == 0 || $node->node_bandwidth < $node->node_bandwidth_limit)) {
-                    return $this->view()->assign('node', $node)->assign('user', $user)->assign('mu', $mu)->assign('relay_rule_id', $relay_rule_id)->registerClass('URL', URL::class)->display('user/nodeinfo.tpl');
+                    return $this->view()->assign('node', $node)->assign('user', $user)->assign('mu', $mu)->registerClass('URL', URL::class)->display('user/nodeinfo.tpl');
                 }
                 break;
             default:

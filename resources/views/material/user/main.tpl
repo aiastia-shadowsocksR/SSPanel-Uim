@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="/theme/material/css/user.min.css">
     <!-- jquery -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0"></script>
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
     <!-- js -->
     <script src="/assets/js/fuck.min.js"></script>
@@ -99,9 +99,6 @@
                     <ul class="menu-collapse collapse in" id="ui_menu_use">
                         <li>
                             <a href="/user/node"><i class="icon icon-lg">airplanemode_active</i>&nbsp;节点列表</a>
-                        </li>
-                        <li>
-                            <a href="/user/relay"><i class="icon icon-lg">compare_arrows</i>&nbsp;中转规则</a>
                         </li>
                         <li>
                             <a href="/user/lookingglass"><i class="icon icon-lg">visibility</i>&nbsp;延迟检测</a>
