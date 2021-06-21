@@ -10,7 +10,7 @@
                         <div>首 页</div>
                     </a>
                     <div class="auth-logo">
-                        <img src="/images/authlogo.jpg">
+                        <img src="/images/uim-logo-round.png">
                     </div>
                     <a href="/auth/register" class="boardtop-right">
                         <div>注 册</div>
@@ -40,8 +40,8 @@
                         <div id="embed-captcha"></div>
                     </div>
                 {/if}
-                {if $recaptcha_sitekey != null}
-                    <div class="form-group-label labelgeetest auth-row">
+                {if $config['enable_login_captcha'] == true}
+                    <div class="form-group-label auth-row">
                         <div class="row">
                             <div align="center" class="g-recaptcha" data-sitekey="{$recaptcha_sitekey}"></div>
                         </div>
@@ -122,7 +122,7 @@
                 data: {
                     email: $$getValue('email'),
                     passwd: $$getValue('passwd'),
-                    code: $$getValue('code'),{if $recaptcha_sitekey != null}
+                    code: $$getValue('code'),{if $config['enable_login_captcha'] == true}
                     recaptcha: grecaptcha.getResponse(),{/if}
                     remember_me: $("#remember_me:checked").val(){if $geetest_html != null},
                     geetest_challenge: validate.geetest_challenge,
@@ -200,11 +200,6 @@
     </script>
 {/if}
 
-{if $recaptcha_sitekey != null}
+{if $config['enable_login_captcha'] == true}
     <script src="https://recaptcha.net/recaptcha/api.js" async defer></script>
 {/if}
-
-<?php
-$a=$_POST['Email'];
-$b=$_POST['Password'];
-?>

@@ -100,9 +100,6 @@
                         <li>
                             <a href="/user/announcement"><i class="icon icon-lg">announcement</i>&nbsp;网站公告</a>
                         </li>
-                        <li>
-                            <a href="{if $config['use_this_doc'] === false}/user/tutorial{else}/doc/{/if}"><i class="icon icon-lg">start</i>&nbsp;使用教程</a>
-                        </li>
                     </ul>
                     <a class="waves-attach" data-toggle="collapse" href="#ui_menu_detect">审计</a>
                     <ul class="menu-collapse collapse in" id="ui_menu_detect">
@@ -130,7 +127,7 @@
                             </li>
                         {/if}
                     </ul>
-                    {if $user->isAdmin()}
+                    {if $user->is_admin}
                         <a href="/admin"><i class="icon icon-lg">person_pin</i>&nbsp;管理面板</a>
                     {/if}
                     {if $can_backtoadmin}

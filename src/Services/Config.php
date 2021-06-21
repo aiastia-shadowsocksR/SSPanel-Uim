@@ -56,8 +56,12 @@ class Config
             'enable_kill'             => $_ENV['enable_kill'],
             'enable_change_email'     => $_ENV['enable_change_email'],
             'custom_invite_price'     => $_ENV['custom_invite_price'],
-            'captcha_provider'        => $_ENV['captcha_provider'],
             'enable_email_verify'     => self::getconfig('Register.bool.Enable_email_verify'),
+
+            'captcha_provider'        => $_ENV['captcha_provider'],
+            'enable_reg_captcha'      => $_ENV['enable_reg_captcha'],
+            'enable_login_captcha'    => $_ENV['enable_login_captcha'],
+            'enable_checkin_captcha'  => $_ENV['enable_checkin_captcha'],
 
             'enable_telegram'         => $_ENV['enable_telegram'],
             'telegram_bot'            => $_ENV['telegram_bot'],
@@ -78,16 +82,7 @@ class Config
             'auto_detect_ban_time'    => $_ENV['auto_detect_ban_time'],
             'auto_detect_ban'         => $_ENV['auto_detect_ban'],
 
-            'use_this_doc'            => $_ENV['use_this_doc'],
-            'documents_name'          => $_ENV['documents_name'],
-            'remote_documents'        => $_ENV['remote_documents'],
-            'documents_source'        => $_ENV['documents_source'],
-
             'userCenterClient'        => $_ENV['userCenterClient'],
-
-            'old_index_DESC'          => $_ENV['old_index_DESC'],
-
-            'sspanelAnalysis'         => $_ENV['sspanelAnalysis'],
 
             'sentry_dsn'              => !empty($_ENV['sentry_dsn']) ? $_ENV['sentry_dsn'] : null,
         ];

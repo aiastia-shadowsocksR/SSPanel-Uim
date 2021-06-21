@@ -4,7 +4,6 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\AdminController;
 use App\Models\{
-    Ip,
     User,
     Shop,
     Bought,
@@ -19,15 +18,22 @@ use App\Utils\{
     GA,
     Hash,
     Tools,
-    QQWry,
     Cookie
 };
 use Exception;
-use App\Utils\DatatablesHelper;
 use Ramsey\Uuid\Uuid;
+use Slim\Http\{
+    Request,
+    Response
+};
 
 class UserController extends AdminController
 {
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function index($request, $response, $args)
     {
         $table_config['total_column'] = array(
@@ -55,7 +61,7 @@ class UserController extends AdminController
             'used_traffic'          => '已用流量/GB',
             'enable_traffic'        => '总流量/GB',
             'last_checkin_time'     => '上次签到时间',
-            'today_traffic'         => '今日流量/MB',
+            'today_traffic'         => '今日流量',
             'enable'                => '是否启用',
             'reg_date'              => '注册时间',
             'reg_ip'                => '注册IP',
@@ -67,13 +73,19 @@ class UserController extends AdminController
         );
         $table_config['default_show_column'] = array('op', 'id', 'user_name', 'remark', 'email');
         $table_config['ajax_url'] = 'user/ajax';
-        $shops = Shop::where('status', 1)->orderBy('name')->get();
-        return $this->view()
-            ->assign('shops', $shops)
-            ->assign('table_config', $table_config)
-            ->display('admin/user/index.tpl');
+        return $response->write(
+            $this->view()
+                ->assign('shops',        Shop::orderBy('name')->get())
+                ->assign('table_config', $table_config)
+                ->display('admin/user/index.tpl')
+        );
     }
 
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function createNewUser($request, $response, $args)
     {
         # 需要一个 userEmail
@@ -85,17 +97,19 @@ class UserController extends AdminController
         $shop_id = (int) $request->getParam('userShop');
 
         // not really user input
-        //if (!Check::isEmailLegal($email)) {
-        //    $res['ret'] = 0;
-        //   $res['msg'] = '邮箱无效';
-        //   return $response->getBody()->write(json_encode($res));
-        //}
+        // if (!Check::isEmailLegal($email)) {
+        //     return $response->withJson([
+        //         'ret' => 0,
+        //         'msg' => '邮箱无效'
+        //     ]);
+        // }
         // check email
         $user = User::where('email', $email)->first();
         if ($user != null) {
-            $res['ret'] = 0;
-            $res['msg'] = '邮箱已经被注册了';
-            return $response->getBody()->write(json_encode($res));
+            return $response->withJson([
+                'ret' => 0,
+                'msg' => '邮箱已经被注册了'
+            ]);
         }
         // do reg user
         $user                       = new User();
@@ -131,7 +145,6 @@ class UserController extends AdminController
         $user->expire_in            = date('Y-m-d H:i:s', time() + (int) Config::getconfig('Register.string.defaultExpire_in') * 86400);
         $user->reg_date             = date('Y-m-d H:i:s');
         $user->reg_ip               = $_SERVER['REMOTE_ADDR'];
-        $user->plan                 = 'A';
         $user->theme                = $_ENV['theme'];
 
         $groups = explode(',', $_ENV['random_group']);
@@ -174,143 +187,34 @@ class UserController extends AdminController
             } catch (Exception $e) {
                 $res['email_error'] = $e->getMessage();
             }
-            return $response->getBody()->write(json_encode($res));
+            return $response->withJson($res);
         }
-        $res['ret'] = 0;
-        $res['msg'] = '未知错误';
-        return $response->getBody()->write(json_encode($res));
+        return $response->withJson([
+            'ret' => 0,
+            'msg' => '未知错误'
+        ]);
     }
 
-    public function buy($request, $response, $args)
-    {
-        #shop 信息可以通过 App\Controllers\UserController:shop 获得
-        # 需要shopId，disableothers，autorenew,userEmail
-
-        $shopId         = $request->getParam('shopId');
-        $shop           = Shop::where('id', $shopId)->where('status', 1)->first();
-        $disableothers  = $request->getParam('disableothers');
-        $autorenew      = $request->getParam('autorenew');
-        $email          = $request->getParam('userEmail');
-        $user           = User::where('email', '=', $email)->first();
-        if ($user == null) {
-            $result['ret'] = 0;
-            $result['msg'] = '未找到该用户';
-            return $response->getBody()->write(json_encode($result));
-        }
-        if ($shop == null) {
-            $result['ret'] = 0;
-            $result['msg'] = '请选择套餐';
-            return $response->getBody()->write(json_encode($result));
-        }
-        if ($disableothers == 1) {
-            $boughts = Bought::where('userid', $user->id)->get();
-            foreach ($boughts as $disable_bought) {
-                $disable_bought->renew = 0;
-                $disable_bought->save();
-            }
-        }
-        $bought           = new Bought();
-        $bought->userid   = $user->id;
-        $bought->shopid   = $shop->id;
-        $bought->datetime = time();
-        if ($autorenew == 0 || $shop->auto_renew == 0) {
-            $bought->renew = 0;
-        } else {
-            $bought->renew = time() + $shop->auto_renew * 86400;
-        }
-
-        $price = $shop->price;
-        $bought->price = $price;
-        $bought->save();
-
-        $shop->buy($user);
-        $result['ret'] = 1;
-        $result['msg'] = '套餐添加成功';
-        return $response->getBody()->write(json_encode($result));
-    }
-
-    public function search($request, $response, $args)
-    {
-        $pageNum = 1;
-        $text = $args['text'];
-        if (isset($request->getQueryParams()['page'])) {
-            $pageNum = $request->getQueryParams()['page'];
-        }
-
-        $users = User::where('email', 'LIKE', '%' . $text . '%')->orWhere('user_name', 'LIKE', '%' . $text . '%')->orWhere('im_value', 'LIKE', '%' . $text . '%')->orWhere('port', 'LIKE', '%' . $text . '%')->orWhere('remark', 'LIKE', '%' . $text . '%')->paginate(20, ['*'], 'page', $pageNum);
-
-        //Ip::where("datetime","<",time()-90)->get()->delete();
-        $total = Ip::where('datetime', '>=', time() - 90)->orderBy('userid', 'desc')->get();
-
-        $userip = array();
-        $useripcount = array();
-        $regloc = array();
-
-        $iplocation = new QQWry();
-        foreach ($users as $user) {
-            $useripcount[$user->id] = 0;
-            $userip[$user->id] = array();
-
-            $location = $iplocation->getlocation($user->reg_ip);
-            $regloc[$user->id] = iconv('gbk', 'utf-8//IGNORE', $location['country'] . $location['area']);
-        }
-
-        foreach ($total as $single) {
-            if (isset($useripcount[$single->userid]) && !isset($userip[$single->userid][$single->ip])) {
-                ++$useripcount[$single->userid];
-                $location = $iplocation->getlocation($single->ip);
-                $userip[$single->userid][$single->ip] = iconv('gbk', 'utf-8//IGNORE', $location['country'] . $location['area']);
-            }
-        }
-
-        return $this->view()->assign('users', $users)->assign('regloc', $regloc)->assign('useripcount', $useripcount)->assign('userip', $userip)->display('admin/user/index.tpl');
-    }
-
-    public function sort($request, $response, $args)
-    {
-        $pageNum = 1;
-        $text = $args['text'];
-        $asc = $args['asc'];
-        if (isset($request->getQueryParams()['page'])) {
-            $pageNum = $request->getQueryParams()['page'];
-        }
-
-        $users->setPath('/admin/user/sort/' . $text . '/' . $asc);
-
-        //Ip::where("datetime","<",time()-90)->get()->delete();
-        $total = Ip::where('datetime', '>=', time() - 90)->orderBy('userid', 'desc')->get();
-
-        $userip = array();
-        $useripcount = array();
-        $regloc = array();
-
-        $iplocation = new QQWry();
-        foreach ($users as $user) {
-            $useripcount[$user->id] = 0;
-            $userip[$user->id] = array();
-
-            $location = $iplocation->getlocation($user->reg_ip);
-            $regloc[$user->id] = iconv('gbk', 'utf-8//IGNORE', $location['country'] . $location['area']);
-        }
-
-        foreach ($total as $single) {
-            if (isset($useripcount[$single->userid]) && !isset($userip[$single->userid][$single->ip])) {
-                ++$useripcount[$single->userid];
-                $location = $iplocation->getlocation($single->ip);
-                $userip[$single->userid][$single->ip] = iconv('gbk', 'utf-8//IGNORE', $location['country'] . $location['area']);
-            }
-        }
-
-        return $this->view()->assign('users', $users)->assign('regloc', $regloc)->assign('useripcount', $useripcount)->assign('userip', $userip)->display('admin/user/index.tpl');
-    }
-
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function edit($request, $response, $args)
     {
-        $id = $args['id'];
-        $user = User::find($id);
-        return $this->view()->assign('edit_user', $user)->display('admin/user/edit.tpl');
+        $user = User::find($args['id']);
+        return $response->write(
+            $this->view()
+                ->assign('edit_user', $user)
+                ->display('admin/user/edit.tpl')
+        );
     }
 
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function update($request, $response, $args)
     {
         $id = $args['id'];
@@ -380,41 +284,55 @@ class UserController extends AdminController
         }
 
         if (!$user->save()) {
-            $rs['ret'] = 0;
-            $rs['msg'] = '修改失败';
-            return $response->getBody()->write(json_encode($rs));
+            return $response->withJson([
+                'ret' => 0,
+                'msg' => '修改失败'
+            ]);
         }
-        $rs['ret'] = 1;
-        $rs['msg'] = '修改成功';
-        return $response->getBody()->write(json_encode($rs));
+        return $response->withJson([
+            'ret' => 1,
+            'msg' => '修改成功'
+        ]);
     }
 
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function delete($request, $response, $args)
     {
-        $id = $request->getParam('id');
-        $user = User::find($id);
+        $user = User::find((int) $request->getParam('id'));
         if (!$user->kill_user()) {
-            $rs['ret'] = 0;
-            $rs['msg'] = '删除失败';
-            return $response->getBody()->write(json_encode($rs));
+            return $response->withJson([
+                'ret' => 0,
+                'msg' => '删除失败'
+            ]);
         }
-        $rs['ret'] = 1;
-        $rs['msg'] = '删除成功';
-        return $response->getBody()->write(json_encode($rs));
+        return $response->withJson([
+            'ret' => 1,
+            'msg' => '删除成功'
+        ]);
     }
 
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function changetouser($request, $response, $args)
     {
-        $userid     = $request->getParam('userid');
-        $adminid    = $request->getParam('adminid');
-        $user       = User::find($userid);
-        $admin      = User::find($adminid);
-        $expire_in  = time() + 60 * 60;
+        $userid    = $request->getParam('userid');
+        $adminid   = $request->getParam('adminid');
+        $user      = User::find($userid);
+        $admin     = User::find($adminid);
+        $expire_in = time() + 60 * 60;
 
         if (!$admin->is_admin || !$user || !Auth::getUser()->isLogin) {
-            $rs['ret'] = 0;
-            $rs['msg'] = '非法请求';
-            return $response->getBody()->write(json_encode($rs));
+            return $response->withJson([
+                'ret' => 0,
+                'msg' => '非法请求'
+            ]);
         }
 
         Cookie::set([
@@ -430,148 +348,91 @@ class UserController extends AdminController
             'old_expire_in' => Cookie::get('expire_in'),
             'old_local'     => $request->getParam('local'),
         ], $expire_in);
-        $rs['ret'] = 1;
-        $rs['msg'] = '切换成功';
-        return $response->getBody()->write(json_encode($rs));
+
+        return $response->withJson([
+            'ret' => 1,
+            'msg' => '切换成功'
+        ]);
     }
 
+    /**
+     * @param Request   $request
+     * @param Response  $response
+     * @param array     $args
+     */
     public function ajax($request, $response, $args)
     {
-        //得到排序的方式
-        $order        = $request->getParam('order')[0]['dir'];
-        //得到排序字段的下标
-        $order_column = $request->getParam('order')[0]['column'];
-        //根据排序字段的下标得到排序字段
-        $order_field  = $request->getParam('columns')[$order_column]['data'];
-        $limit_start  = $request->getParam('start');
-        $limit_length = $request->getParam('length');
-        $search       = $request->getParam('search')['value'];
-
-        if ($order_field == 'used_traffic') {
-            $order_field = 'u + d';
-        } elseif ($order_field == 'enable_traffic') {
-            $order_field = 'transfer_enable';
-        } elseif ($order_field == 'today_traffic') {
-            $order_field = 'u +d - last_day_t';
-        } elseif ($order_field == 'querys') {
-            $order_field = 'id';
-        }
-
-        $users = array();
-        $count_filtered = 0;
-
-        $query = User::query();
-        if ($search) {
-            $v          = (int) (new DatatablesHelper())->query('select version()')[0]['version()'];
-            $like_str   = ($v < 8 ? 'LIKE' : 'LIKE binary');
-            $query->where('id', 'LIKE', "%$search%")
-                ->orwhere('user_name', 'LIKE', "%$search%")
-                ->orwhere('email', 'LIKE', "%$search%")
-                ->orwhere('passwd', 'LIKE', "%$search%")
-                ->orwhere('port', 'LIKE', "%$search%")
-                ->orwhere('invite_num', 'LIKE', "%$search%")
-                ->orwhere('money', 'LIKE', "%$search%")
-                ->orwhere('ref_by', 'LIKE', "%$search%")
-                ->orwhere('method', 'LIKE', "%$search%")
-                ->orwhere('reg_ip', 'LIKE', "%$search%")
-                ->orwhere('node_speedlimit', 'LIKE', "%$search%")
-                ->orwhere('im_value', 'LIKE', "%$search%")
-                ->orwhere('class', 'LIKE', "%$search%")
-                ->orwhere('remark', 'LIKE', "%$search%")
-                ->orwhere('node_group', 'LIKE', "%$search%")
-                ->orwhere('auto_reset_day', 'LIKE', "%$search%")
-                ->orwhere('auto_reset_bandwidth', 'LIKE', "%$search%")
-                ->orwhere('protocol', 'LIKE', "%$search%")
-                ->orwhere('protocol_param', 'LIKE', "%$search%")
-                ->orwhere('obfs', 'LIKE', "%$search%")
-                ->orwhere('obfs_param', 'LIKE', "%$search%")
-                ->orwhere('reg_date', $like_str, "%$search%")
-                ->orwhere('class_expire', $like_str, "%$search%")
-                ->orwhere('expire_in', $like_str, "%$search%");
-        }
-        $query_count = clone $query;
-        $users = $query->orderByRaw($order_field . ' ' . $order)
-            ->skip($limit_start)->limit($limit_length)
-            ->get();
-        $count_filtered = $query_count->count();
-
-        $data = array();
-        foreach ($users as $user) {
-            $tempdata = array();
-            //model里是casts所以没法直接 $tempdata=(array)$user
-            $tempdata['op']         = '<a class="btn btn-brand" href="/admin/user/' . $user->id . '/edit">编辑</a>
-                    <a class="btn btn-brand-accent" id="delete" href="javascript:void(0);" onClick="delete_modal_show(\'' . $user->id . '\')">删除</a>
-                    <a class="btn btn-brand" id="changetouser" href="javascript:void(0);" onClick="changetouser_modal_show(\'' . $user->id . '\')">切换为该用户</a>';
-
-            $tempdata['querys']     = '<a class="btn btn-brand" href="/admin/user/' . $user->id . '/bought">套餐</a>
-                    <a class="btn btn-brand" href="/admin/user/' . $user->id . '/code">充值</a>
-                    <a class="btn btn-brand" href="/admin/user/' . $user->id . '/sublog">订阅</a>
-                    <a class="btn btn-brand" href="/admin/user/' . $user->id . '/detect">审计</a>
-                    <a class="btn btn-brand" href="/admin/user/' . $user->id . '/login">登录</a>';
-
-            $tempdata['id']         = $user->id;
-            $tempdata['user_name']  = $user->user_name;
-            $tempdata['remark']     = $user->remark;
-            $tempdata['email']      = $user->email;
-            $tempdata['money']      = $user->money;
-            $tempdata['im_value']   = $user->im_value;
-            switch ($user->im_type) {
-                case 1:
-                    $tempdata['im_type'] = '微信';
-                    break;
-                case 2:
-                    $tempdata['im_type'] = 'QQ';
-                    break;
-                case 3:
-                    $tempdata['im_type'] = 'Google+';
-                    break;
-                default:
-                    $tempdata['im_type'] = 'Telegram';
-                    $tempdata['im_value'] = '<a href="https://telegram.me/' . $user->im_value . '">' . $user->im_value . '</a>';
-            }
-            $tempdata['node_group']           = $user->node_group;
-            $tempdata['expire_in']            = $user->expire_in;
-            $tempdata['class']                = $user->class;
-            $tempdata['class_expire']         = $user->class_expire;
-            $tempdata['passwd']               = $user->passwd;
-            $tempdata['port']                 = $user->port;
-            $tempdata['method']               = $user->method;
-            $tempdata['protocol']             = $user->protocol;
-            $tempdata['obfs']                 = $user->obfs;
-            $tempdata['obfs_param']           = $user->obfs_param;
-            $tempdata['online_ip_count']      = $user->online_ip_count();
-            $tempdata['last_ss_time']         = $user->lastSsTime();
-            $tempdata['used_traffic']         = Tools::flowToGB($user->u + $user->d);
-            $tempdata['enable_traffic']       = Tools::flowToGB($user->transfer_enable);
-            $tempdata['last_checkin_time']    = $user->lastCheckInTime();
-            $tempdata['today_traffic']        = Tools::flowToMB($user->u + $user->d - $user->last_day_t);
-            $tempdata['enable']               = $user->enable == 1 ? '可用' : '禁用';
-            $tempdata['reg_date']             = $user->reg_date;
-            $tempdata['reg_ip']               = $user->reg_ip;
-            $tempdata['auto_reset_day']       = $user->auto_reset_day;
-            $tempdata['auto_reset_bandwidth'] = $user->auto_reset_bandwidth;
-            $tempdata['ref_by']               = $user->ref_by;
-            if ($user->ref_by == 0) {
-                $tempdata['ref_by_user_name'] = '系统邀请';
-            } else {
-                $ref_user = User::find($user->ref_by);
-                if ($ref_user == null) {
-                    $tempdata['ref_by_user_name'] = '邀请人已经被删除';
-                } else {
-                    $tempdata['ref_by_user_name'] = $ref_user->user_name;
+        $query = User::getTableDataFromAdmin(
+            $request,
+            static function (&$order_field) {
+                if ($order_field == 'used_traffic') {
+                    $order_field = 'u + d';
+                } elseif ($order_field == 'enable_traffic') {
+                    $order_field = 'transfer_enable';
+                } elseif ($order_field == 'today_traffic') {
+                    $order_field = 'u + d - last_day_t';
+                } elseif ($order_field == 'querys') {
+                    $order_field = 'id';
                 }
             }
+        );
 
-            $tempdata['top_up'] = $user->get_top_up();
+        $data  = [];
+        foreach ($query['datas'] as $value) {
+            /** @var User $value */
+
+            $tempdata['op']                     = '' .
+                '<a class="btn btn-brand" href="/admin/user/' . $value->id . '/edit">编辑</a>' .
+                '<a class="btn btn-brand-accent" id="delete" href="javascript:void(0);" onClick="delete_modal_show(\'' . $value->id . '\')">删除</a>' .
+                '<a class="btn btn-brand" id="changetouser" href="javascript:void(0);" onClick="changetouser_modal_show(\'' . $value->id . '\')">切换为该用户</a>';
+
+            $tempdata['querys']                 = '' .
+                '<a class="btn btn-brand" href="/admin/user/' . $value->id . '/bought">套餐</a>' .
+                '<a class="btn btn-brand" href="/admin/user/' . $value->id . '/code">充值</a>' .
+                '<a class="btn btn-brand" href="/admin/user/' . $value->id . '/sublog">订阅</a>' .
+                '<a class="btn btn-brand" href="/admin/user/' . $value->id . '/detect">审计</a>' .
+                '<a class="btn btn-brand" href="/admin/user/' . $value->id . '/login">登录</a>';
+
+            $tempdata['id']                     = $value->id;
+            $tempdata['user_name']              = $value->user_name;
+            $tempdata['remark']                 = $value->remark;
+            $tempdata['email']                  = $value->email;
+            $tempdata['money']                  = $value->money;
+            $tempdata['im_type']                = $value->im_type();
+            $tempdata['im_value']               = $value->im_value();
+            $tempdata['node_group']             = $value->node_group;
+            $tempdata['expire_in']              = $value->expire_in;
+            $tempdata['class']                  = $value->class;
+            $tempdata['class_expire']           = $value->class_expire;
+            $tempdata['passwd']                 = $value->passwd;
+            $tempdata['port']                   = $value->port;
+            $tempdata['method']                 = $value->method;
+            $tempdata['protocol']               = $value->protocol;
+            $tempdata['obfs']                   = $value->obfs;
+            $tempdata['obfs_param']             = $value->obfs_param;
+            $tempdata['online_ip_count']        = $value->online_ip_count();
+            $tempdata['last_ss_time']           = $value->lastSsTime();
+            $tempdata['used_traffic']           = Tools::flowToGB($value->u + $value->d);
+            $tempdata['enable_traffic']         = Tools::flowToGB($value->transfer_enable);
+            $tempdata['last_checkin_time']      = $value->lastCheckInTime();
+            $tempdata['today_traffic']          = $value->TodayusedTraffic();
+            $tempdata['enable']                 = $value->enable == 1 ? '可用' : '禁用';
+            $tempdata['reg_date']               = $value->reg_date;
+            $tempdata['reg_ip']                 = $value->reg_ip;
+            $tempdata['auto_reset_day']         = $value->auto_reset_day;
+            $tempdata['auto_reset_bandwidth']   = $value->auto_reset_bandwidth;
+            $tempdata['ref_by']                 = $value->ref_by;
+            $tempdata['ref_by_user_name']       = $value->ref_by_user_name();
+            $tempdata['top_up']                 = $value->get_top_up();
 
             $data[] = $tempdata;
         }
-        $info = [
-            'draw'            => $request->getParam('draw'), // ajax请求次数，作为标识符
+
+        return $response->withJson([
+            'draw'            => $request->getParam('draw'),
             'recordsTotal'    => User::count(),
-            'recordsFiltered' => $count_filtered,
+            'recordsFiltered' => $query['count'],
             'data'            => $data,
-        ];
-        return json_encode($info, true);
+        ]);
     }
 }
