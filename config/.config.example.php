@@ -6,7 +6,8 @@
 //如需换行，直接换行即可，无需换行符
 //【新增/删除】config无需写入迁移附注
 $_ENV['config_migrate_notice'] =
-'新增 enable_change_email 配置項
+    '新增 enable_change_email 配置項
+新增 smtp_bbc 配置項
 ';
 $_ENV['version'] = 2;    //仅当涉及【需要修改config以外的文件】时才需要+1，站长勿动
 
@@ -36,9 +37,12 @@ $_ENV['db_prefix']    = '';
 
 
 //邮件设置--------------------------------------------------------------------------------------------
-$_ENV['mailDriver']      = 'none';      //发送邮件方式：none / mailgun / smtp / sendgrid / ses
-$_ENV['sendPageLimit']   = 50;          //发信分页 解决大站发公告超时问题
-$_ENV['email_queue']     = true;        //如题，自动计划任务邮件使用队列 需要每分钟执行 php xcat Job SendMail
+$_ENV['mailDriver']         = 'none';       //发送邮件方式：none / mailgun / smtp / sendgrid / ses
+$_ENV['sendPageLimit']      = 50;           //发信分页 解决大站发公告超时问题
+$_ENV['email_queue']        = true;         //如题，自动计划任务邮件使用队列 需要每分钟执行 php xcat Job SendMail
+$_ENV['mail_filter']        = 0;            //0: 关闭; 1: 白名单模式; 2; 黑名单模式;
+$_ENV['mail_filter_list']   = array("qq.com", "vip.qq.com", "foxmail.com");
+
 
 # mailgun
 $_ENV['mailgun_key']     = '';
@@ -48,13 +52,17 @@ $_ENV['mailgun_sender']  = '';
 # smtp
 $_ENV['smtp_host']          = '';                          // SMTP 邮局服务器域名
 $_ENV['smtp_username']      = '';                          // SMTP 账户名
-$_ENV['smtp_password']     = '';                           // SMTP 账户密码
+$_ENV['smtp_password']      = '';                          // SMTP 账户密码
 $_ENV['smtp_port']          = 465;                         // SMTP 端口(常见端口 25, 587 465)
 $_ENV['smtp_name']          = '';                          // SMTP 发信名称
 $_ENV['smtp_sender']        = '';                          // SMTP 账户发信地址
 $_ENV['smtp_ssl']           = true;                        // 是否使用 TLS/SSL 发信
+$_ENV['smtp_bbc']           = '';                          // 发给用户的邮件密送给指定邮箱备份
 $_ENV['smtp_reply_to']      = $_ENV['smtp_username'];      // 用户回复邮件的接受地址
 $_ENV['smtp_reply_to_name'] = $_ENV['smtp_sender'];        // 回复地址显示名
+$_ENV['smtp_save_sent']     = false;                       // 将发送的邮件保存
+$_ENV['smtp_save_path']     = '{' . $_ENV['smtp_host'] . '}Sent';
+
 
 # sendgrid
 $_ENV['sendgrid_key']    = '';
@@ -80,8 +88,8 @@ $_ENV['random_group']              = '0';                       //注册时随�
 $_ENV['enable_reg_im']             = false;                      //注册时是否要求用户输入IM联系方式
 
 $_ENV['reg_forbidden_ip']          = '127.0.0.0/8,::1/128';     //注册时默认禁止访问IP列表，半角英文逗号分割
-$_ENV['min_port']                  = 10000;                     //用户端口池最小值
-$_ENV['max_port']                  = 65535;                     //用户端口池最大值
+$_ENV['min_port']                  = 10000;                     //用户端口池最小值，如果该数值为0则用户在注册的时候不会被分配多用户端口，适合纯V2Ray/Trojan机场
+$_ENV['max_port']                  = 65535;                     //用户端口池最大值，如果该数值为0则用户在注册的时候不会被分配多用户端口，适合纯V2Ray/Trojan机场
 $_ENV['reg_forbidden_port']        = '';                        //注册时默认禁止访问端口列表，半角英文逗号分割，支持端口段
 
 $_ENV['mu_suffix']                 = 'microsoft.com';           //单端口多用户混淆参数后缀，可以随意修改，但请保持前后端一致
@@ -135,9 +143,9 @@ $_ENV['enable_sub_extend']          = true;                         // 是否开
 // 可用于为用户推送最新地址等信息，尽可能简短且数量不宜太多
 $_ENV['sub_message']                = [];
 $_ENV['disable_sub_mu_port']        = false;                        // 将订阅中单端口的信息去除
-$_ENV['subscribeLog']               = false;			            //是否记录用户订阅日志
+$_ENV['subscribeLog']               = false;                        //是否记录用户订阅日志
 $_ENV['subscribeLog_show']          = true;                         //是否允许用户查看订阅记录
-$_ENV['subscribeLog_keep_days']     = 7;		                    //订阅记录保留天数
+$_ENV['subscribeLog_keep_days']     = 7;                            //订阅记录保留天数
 $_ENV['mu_port_migration']          = false;                        //为后端直接下发偏移后的端口
 $_ENV['add_emoji_to_node_name']     = false;                        //为部分订阅中默认添加 emoji
 $_ENV['add_appName_to_ss_uri']      = true;                         //为 SS 节点名称中添加站点名
@@ -285,8 +293,12 @@ $_ENV['enable_checkin_captcha'] = false;        //启用签到验证码
 
 
 //支付系统设置----------------------------------------------------------------------------------------
-#取值 none | f2fpay | paymentwall | spay | payjs | bitpayx | theadpay | coinpay
+#取值 none | f2fpay | paymentwall | spay | payjs | bitpayx | theadpay | coinpay | vmqpay
 $_ENV['payment_system']       = 'none';     // todo: ['gateway1', 'gateway2']
+
+# vmqpay
+$_ENV['vmqpay_key']           = '';          //v免签通讯密钥
+$_ENV['vmqpay_gateway']       = '';          //v免签网关地址如 https://pay.com
 
 # codepay码支付
 $_ENV['codepay_id']           = '';          //码支付ID
@@ -328,10 +340,10 @@ $_ENV['theadpay_mchid']       = '';
 $_ENV['theadpay_key']         = '';
 
 # CoinPay
-$_ENV['coinpay_appid']  ='';	// CoinPay 应用ID (*)
-$_ENV['coinpay_secret'] ='';	// CoinPay 验证密钥 (*)
-$_ENV['coinpay_notify'] ='';    // 异步回调URL
-$_ENV['coinpay_return'] ='';    // 同步返回URL
+$_ENV['coinpay_appid']  = '';    // CoinPay 应用ID (*)
+$_ENV['coinpay_secret'] = '';    // CoinPay 验证密钥 (*)
+$_ENV['coinpay_notify'] = '';    // 异步回调URL
+$_ENV['coinpay_return'] = '';    // 同步返回URL
 
 # EasyPay https://t.me/Easy_panel
 $_ENV['easypay_app_id'] = '';      // 商户APPID
