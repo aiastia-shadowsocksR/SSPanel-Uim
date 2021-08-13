@@ -16,7 +16,7 @@ $_ENV['version'] = 2;    //仅当涉及【需要修改config以外的文件】�
 $_ENV['key']        = '1145141919810';                //!!! 瞎 jb 修改此key为随机字符串确保网站安全 !!!
 $_ENV['debug']      = false;                          //正式环境请确保为 false
 $_ENV['appName']    = 'SSPanel-UIM';                      //站点名称
-$_ENV['baseUrl']    = 'https://sspanel.host/';               //站点地址
+$_ENV['baseUrl']    = 'https://sspanel.host';               //站点地址
 $_ENV['muKey']      = 'NimaQu';                       //用于校验魔改后端请求，可以随意修改，但请保持前后端一致，否则节点不能工作！
 
 
@@ -326,9 +326,6 @@ $_ENV['amount']               = [2, 23, 233, 2333, 23333];        //充值金额
 $_ENV['zfbjk_pid']            = '';
 $_ENV['zfbjk_key']            = '';
 $_ENV['zfbjk_qrcodeurl']      = '';
-
-# MugglePay 麻瓜宝（USDT、比特币、以太坊、EOS等） https://merchants.mugglepay.com/
-$_ENV['bitpay_secret']        = '';
 
 # PayJs
 $_ENV['payjs_mchid']          = '';
