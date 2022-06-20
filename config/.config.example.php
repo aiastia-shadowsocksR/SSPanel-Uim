@@ -19,6 +19,8 @@ $_ENV['appName']    = 'SSPanel-UIM';                      //站点名称
 $_ENV['baseUrl']    = 'https://sspanel.host';               //站点地址
 $_ENV['muKey']      = 'NimaQu';                       //用于校验魔改后端请求，可以随意修改，但请保持前后端一致，否则节点不能工作！
 
+$_ENV['enableAdminApi'] = false;                      // 是否启用 Admin API, 如果不知道此项用途请保持为 false
+$_ENV['adminApiToken']  = 'ChangeMeToSafeKey';        // Admin API 的 Token, 请生成为高强度的 Token
 
 //数据库设置--------------------------------------------------------------------------------------------
 // db_host|db_socket 二选一，若设置 db_socket 则 db_host 会被忽略，不用请留空。若数据库在本机上推荐用 db_socket。
@@ -35,43 +37,17 @@ $_ENV['db_charset']   = 'utf8mb4';
 $_ENV['db_collation'] = 'utf8mb4_unicode_ci';
 $_ENV['db_prefix']    = '';
 
+//流媒体解锁 如下设置将使397，297号节点复用4号节点的检测结果 使用时去掉注释符 //
+$_ENV['streaming_media_unlock_multiplexing'] = [
+    //'397' => '4',
+    //'297' => '4',
+];
 
 //邮件设置--------------------------------------------------------------------------------------------
-$_ENV['mailDriver']         = 'none';       //发送邮件方式：none / mailgun / smtp / sendgrid / ses
 $_ENV['sendPageLimit']      = 50;           //发信分页 解决大站发公告超时问题
 $_ENV['email_queue']        = true;         //如题，自动计划任务邮件使用队列 需要每分钟执行 php xcat Job SendMail
 $_ENV['mail_filter']        = 0;            //0: 关闭; 1: 白名单模式; 2; 黑名单模式;
 $_ENV['mail_filter_list']   = array("qq.com", "vip.qq.com", "foxmail.com");
-
-
-# mailgun
-$_ENV['mailgun_key']     = '';
-$_ENV['mailgun_domain']  = '';
-$_ENV['mailgun_sender']  = '';
-
-# smtp
-$_ENV['smtp_host']          = '';                          // SMTP 邮局服务器域名
-$_ENV['smtp_username']      = '';                          // SMTP 账户名
-$_ENV['smtp_password']      = '';                          // SMTP 账户密码
-$_ENV['smtp_port']          = 465;                         // SMTP 端口(常见端口 25, 587 465)
-$_ENV['smtp_name']          = '';                          // SMTP 发信名称
-$_ENV['smtp_sender']        = '';                          // SMTP 账户发信地址
-$_ENV['smtp_ssl']           = true;                        // 是否使用 TLS/SSL 发信
-$_ENV['smtp_bbc']           = '';                          // 发给用户的邮件密送给指定邮箱备份
-$_ENV['smtp_reply_to']      = $_ENV['smtp_username'];      // 用户回复邮件的接受地址
-$_ENV['smtp_reply_to_name'] = $_ENV['smtp_sender'];        // 回复地址显示名
-$_ENV['smtp_save_sent']     = false;                       // 将发送的邮件保存
-$_ENV['smtp_save_path']     = '{' . $_ENV['smtp_host'] . '}Sent';
-
-
-# sendgrid
-$_ENV['sendgrid_key']    = '';
-$_ENV['sendgrid_sender'] = '';       //发件邮箱
-$_ENV['sendgrid_name']   = '';       //发件人名称
-
-#aws ses
-$_ENV['aws_access_key_id']      = '';
-$_ENV['aws_secret_access_key']  = '';
 
 
 //备份设置--------------------------------------------------------------------------------------------
@@ -81,8 +57,8 @@ $_ENV['backup_notify']      = false;                            //备份通知�
 
 
 //用户注册设置-----------------------------------------------------------------------------------------
-$_ENV['reg_auto_reset_day']        = 0;                         //注册时的流量重置日，0为不重置
-$_ENV['reg_auto_reset_bandwidth']  = 0;                         //需要重置的流量，0为不重置
+$_ENV['free_user_reset_day']            = 0;                         //免费用戶的流量重置日，0为不重置
+$_ENV['free_user_reset_bandwidth']      = 0;                         //需要重置的免费流量，0为不重置
 $_ENV['random_group']              = '0';                       //注册时随机分组，注册时随机分配到的分组，多个分组请用英文半角逗号分隔
 
 $_ENV['enable_reg_im']             = false;                      //注册时是否要求用户输入IM联系方式
@@ -102,15 +78,13 @@ $_ENV['custom_invite_price']       = -1;                        //用户定制�
 
 //已注册用户设置---------------------------------------------------------------------------------------
 #基础
+$_ENV['enable_checkin']             = true;         //是否啓用簽到功能
 $_ENV['checkinMin']                 = 1;            //用户签到最少流量 单位MB
 $_ENV['checkinMax']                 = 50;           //用户签到最多流量
 
 $_ENV['auto_clean_uncheck_days']    = -1;           //自动清理多少天没签到的0级用户，小于等于0时关闭
 $_ENV['auto_clean_unused_days']     = -1;           //自动清理多少天没使用的0级用户，小于等于0时关闭
 $_ENV['auto_clean_min_money']       = 1;            //余额低于多少的0级用户可以被清理
-
-$_ENV['code_payback']               = 20;           //充值返利百分比
-$_ENV['invite_gift']                = 2;            //邀请新用户获得流量奖励，单位G
 
 $_ENV['enable_bought_reset']        = true;         //购买时是否重置流量
 $_ENV['enable_bought_extend']       = true;         //购买时是否延长等级期限（同等级配套）
@@ -131,12 +105,12 @@ $_ENV['enable_change_email']        = true;         //是否允许用户更改�
 $_ENV['notify_limit_mode']          = true;         //false为关闭，per为按照百分比提醒，mb为按照固定剩余流量提醒
 $_ENV['notify_limit_value']         = 20;           //当上一项为per时，此处填写百分比；当上一项为mb时，此处填写流量
 
-
 //订阅设置---------------------------------------------------------------------------------------
 $_ENV['Subscribe']                  = true;                         //本站是否提供订阅功能
 $_ENV['subUrl']                     = $_ENV['baseUrl'] . '/link/';  //订阅地址，如需和站点名称相同，请不要修改
 $_ENV['mergeSub']                   = true;                         //合并订阅设置 可选项 false / true
-$_ENV['enable_sub_extend']          = true;                         // 是否开启订阅中默认显示流量剩余以及账户到期时间以及 sub_message 中的信息
+$_ENV['enable_sub_extend']          = true;                         //是否开启订阅中默认显示流量剩余以及账户到期时间以及 sub_message 中的信息
+$_ENV['enable_forced_replacement']  = true;                         //用户修改账户登录密码时，是否强制更换订阅地址
 
 // 订阅中的营销信息
 // 使用数组形式，将会添加在订阅列表的顶端
@@ -253,15 +227,6 @@ $_ENV['telegram_general_terms']             = '服务条款.';                  
 #Telegram
 $_ENV['enable_telegram_login']              = false;   //开启这个设置前请先配置 Telegram bot 否则不会生效
 
-//沟通设置--------------------------------------------------------------------------------------------
-$_ENV['live_chat']            = 'none';   //是否开启客服系统 none  crisp  mylivechat
-$_ENV['mylivechat_id']        = '';      //客服系统ID，注册地址 https://www.mylivechat.com
-$_ENV['crisp_id']             = '';      //客服系统ID，注册地址 https://crisp.chat/en/
-$_ENV['tawk_id']              = '';      //客服系统ID，注册地址 https://tawk.to/
-
-# PushBear 基于微信模板的向关注了二维码的用户以微信方式推送消息 https://pushbear.ftqq.com/，目前仅用户推送新公告
-$_ENV['usePushBear']          = false;
-$_ENV['PushBear_sendkey']     = '';       //请填写您在PushBear获取的sendkey，请仔细检查勿粘贴错
 
 #工单系统设置
 $_ENV['enable_ticket']        = true;        //是否开启工单系统
@@ -271,80 +236,6 @@ $_ENV['mail_ticket']          = true;        //是否开启工单邮件提醒
 $_ENV['useScFtqq']            = false;        //是否开启工单Server酱提醒
 $_ENV['ScFtqq_SCKEY']         = '';           //请填写您在Server酱获取的SCKEY  请仔细检查勿粘贴错
 
-#管理员联系方式设置
-$_ENV['enable_admin_contact'] = false;                  //是否开启管理员联系方式
-$_ENV['admin_contact1']       = 'QQ：1233456';          //QQ、邮箱、微信仅用于举例
-$_ENV['admin_contact2']       = '邮箱123456@qq.com';    //也可以写电话、tg等其他联系方式
-$_ENV['admin_contact3']       = '微信～123456';         //没有格式要求，想怎么写就怎么写，可留空
-
-
-//验证码设置------------------------------------------------------------------------------------------
-$_ENV['captcha_provider']       = 'recaptcha';        //取值 recaptcha | geetest(极验)
-
-$_ENV['recaptcha_sitekey']      = '';
-$_ENV['recaptcha_secret']       = '';
-
-$_ENV['geetest_id']             = '';
-$_ENV['geetest_key']            = '';
-
-$_ENV['enable_reg_captcha']     = false;        //启用注册验证码
-$_ENV['enable_login_captcha']   = false;        //启用登录验证码
-$_ENV['enable_checkin_captcha'] = false;        //启用签到验证码
-
-
-//支付系统设置----------------------------------------------------------------------------------------
-#取值 none | f2fpay | paymentwall | spay | payjs | bitpayx | theadpay | coinpay | vmqpay
-$_ENV['payment_system']       = 'none';     // todo: ['gateway1', 'gateway2']
-
-# vmqpay
-$_ENV['vmqpay_key']           = '';          //v免签通讯密钥
-$_ENV['vmqpay_gateway']       = '';          //v免签网关地址如 https://pay.com
-
-# codepay码支付
-$_ENV['codepay_id']           = '';          //码支付ID
-$_ENV['codepay_key']          = '';          //码支付通信密钥
-
-# alipay,f2fpay
-$_ENV['f2fpay_app_id']        = '';
-$_ENV['f2fpay_p_id']          = '';
-$_ENV['alipay_public_key']    = '';
-$_ENV['merchant_private_key'] = '';
-$_ENV['f2fNotifyUrl']         = null;           //自定义当面付回调地址
-
-# PaymentWall
-$_ENV['pmw_publickey']        = '';
-$_ENV['pmw_privatekey']       = '';
-$_ENV['pmw_widget']           = 'm2_1';
-$_ENV['pmw_height']           = '350px';
-
-# alipay,spay
-$_ENV['alipay_id']            = '';
-$_ENV['alipay_key']           = '';
-$_ENV['amount']               = [2, 23, 233, 2333, 23333];        //充值金额选项设定
-
-# alipay,zfbjk.com
-$_ENV['zfbjk_pid']            = '';
-$_ENV['zfbjk_key']            = '';
-$_ENV['zfbjk_qrcodeurl']      = '';
-
-# PayJs
-$_ENV['payjs_mchid']          = '';
-$_ENV['payjs_key']            = '';
-
-# 平头哥支付 https://theadpay.com/
-$_ENV['theadpay_url']         = '';
-$_ENV['theadpay_mchid']       = '';
-$_ENV['theadpay_key']         = '';
-
-# CoinPay
-$_ENV['coinpay_appid']  = '';    // CoinPay 应用ID (*)
-$_ENV['coinpay_secret'] = '';    // CoinPay 验证密钥 (*)
-$_ENV['coinpay_notify'] = '';    // 异步回调URL
-$_ENV['coinpay_return'] = '';    // 同步返回URL
-
-# EasyPay https://t.me/Easy_panel
-$_ENV['easypay_app_id'] = '';      // 商户APPID
-$_ENV['easypay_app_secret'] = '';  // 商户APPKEY
 
 #后台商品列表 销量统计
 $_ENV['sales_period']         = 30;             //统计指定周期内的销量，值为【expire/任意大于0的整数】
@@ -441,7 +332,11 @@ $_ENV['userCenterClient']     = [
 $_ENV['detect_gfw_interval']             = 3600;                                                               //检测间隔，单位：秒，低于推荐值会爆炸
 $_ENV['detect_gfw_port']                 = 22;                                                                 //所有节点服务器都打开的TCP端口，常用的为22（SSH端口）
 $_ENV['detect_gfw_url']                  = 'http://cn-sh-tcping.sspanel.org:8080/tcping?ip={ip}&port={port}'; //检测节点是否被gfw墙了的API的URL
-$_ENV['detect_gfw_judge']                = '$json_tcping[\'status\']=="true"';                                 //判断是否被墙的依据，json_tcping为上方URL返回的json数组
+//判断是否被墙的依据，json_tcping为上方URL返回的json数组
+$_ENV['detect_gfw_judge']                = function($json_tcping): bool {
+    return $json_tcping['status'] === "true";
+};
+
 $_ENV['detect_gfw_count']                = '3';                                                                //尝试次数
 
 #离线检测

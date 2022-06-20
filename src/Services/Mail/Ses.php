@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Mail;
 
-use App\Services\Config;
 use App\Services\Aws\Factory;
 
-class Ses extends Base
+final class Ses extends Base
 {
     protected $client;
 
@@ -19,7 +20,7 @@ class Ses extends Base
         return $_ENV['aws_ses_sender'];
     }
 
-    public function send($to, $subject, $text)
+    public function send($to, $subject, $text): void
     {
         $this->client->sendEmail([
             'Destination' => [ // REQUIRED

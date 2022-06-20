@@ -1,79 +1,99 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Gateway;
 
-use App\Services\Auth;
 use App\Models\Paylist;
+use App\Models\Setting;
+use App\Services\Auth;
+use Psr\Http\Message\ResponseInterface;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-class Vmqpay extends AbstractPayment
+final class Vmqpay extends AbstractPayment
 {
-
-    public function purchase($request, $response, $args)
+    public static function _name(): string
     {
-        $vmqpay_key = $_ENV['vmqpay_key'];
-        $vmqpay_gateway = $_ENV['vmqpay_gateway'];
-        $baseUrl = $_ENV['baseUrl'];
+        return 'vmqpay';
+    }
+
+    public static function _enable(): bool
+    {
+        return self::getActiveGateway('vmqpay');
+    }
+
+    public static function _readableName(): string
+    {
+        return 'Vmq 支付';
+    }
+
+    public function purchase(Request $request, Response $response, array $args): ResponseInterface
+    {
+        $trade_no = time();
         $user = Auth::getUser();
-        $price = $request->getParam('price');
+        $configs = Setting::getClass('vmq');
+
+        $param = $user->id;
+        $key = $configs['vmq_key'];
+        $gateway = $configs['vmq_gateway'];
         $type = $request->getParam('type');
-        $param = '';
-        $timestamp = time();
-        $sign = md5($timestamp.$param.$type.$price.$vmqpay_key);
-		
+        $price = $request->getParam('price');
+        $sign = md5($trade_no.$param.$type.$price.$key);
+
         $pl = new Paylist();
         $pl->userid = $user->id;
         $pl->total = $price;
-        $pl->tradeno = $timestamp; //将订单发起时的时间戳作为流水号
+        $pl->tradeno = $trade_no;
         $pl->save();
-		
-        $post_url = "$vmqpay_gateway/createOrder?payId=$timestamp&type=$type&price=$price&sign=$sign&param=$param&isHtml=1&notifyUrl=$baseUrl/payment/notify&returnUrl=$baseUrl/user/code";
-        header('Location:' . $post_url);
+
+        $params = [
+            'payId' => $trade_no,
+            'type' => $type,
+            'price' => $price,
+            'sign' => $sign,
+            'param' => $param,
+            'isHtml' => '1',
+            'notifyUrl' => self::getCallbackUrl(),
+            'returnUrl' => $_ENV['baseUrl'] . '/user/code',
+        ];
+
+        $pay_url = $gateway . '/createOrder?' . http_build_query($params);
+        return $response->withRedirect($pay_url);
     }
-	
-    public function notify($request, $response, $args)
+
+    public function notify($request, $response, $args): ResponseInterface
     {
-        $key = $_ENV['vmqpay_key'];
-        $baseUrl = $_ENV['baseUrl'];
-        $payId = $_GET['payId']; //被当成流水号的时间戳
-        $param = $_GET['param']; //创建订单时传入的自定义参数
-        $type = $_GET['type']; // alipay -> 2, wechat -> 1
-        $price = $_GET['price'];
-        $reallyPrice = $_GET['reallyPrice'];
-		
-        $sign = $_GET['sign'];
-        $_sign =  md5($payId.$param.$type.$price.$reallyPrice.$key);
-        if ($_sign != $sign) {
-            echo "error_sign";
-            exit();
+        $key = Setting::obtain('vmq_key');
+        $payId = $request->getParam('payId');
+        $param = $request->getParam('param');
+        $type = $request->getParam('type');
+        $price = $request->getParam('price');
+        $reallyPrice = $request->getParam('reallyPrice');
+        $cloud_sign = $request->getParam('sign');
+
+        $local_sign = md5($payId.$param.$type.$price.$reallyPrice.$key);
+
+        if ($cloud_sign !== $local_sign) {
+            die('error_sign');
         }
-		
-        echo "success";
-        $this->postPayment($payId, '在线支付');
+
+        $this->postPayment($payId, "在线支付 ${payId}");
+        die('success');
     }
-	
-    public function getPurchaseHTML()
+
+    public static function getPurchaseHTML(): string
     {
         return '
-                        <div class="card-inner">
-                        <p class="card-heading">请输入充值金额</p>
-                        <form class="vmqpay" name="vmqpay" action="/user/code/vmqpay" method="get">
-                            <input class="form-control maxwidth-edit" id="price" name="price" placeholder="输入充值金额后，点击你要付款的应用图标即可" autofocus="autofocus" type="number" min="0.01" max="1000" step="0.01" required="required">
-                            <br>
-                            <button class="btn btn-flat waves-attach" id="btnSubmit" type="submit" name="type" value="2" ><img src="/images/alipay.jpg" width="50px" height="50px" /></button>
-                            <button class="btn btn-flat waves-attach" id="btnSubmit" type="submit" name="type" value="1" ><img src="/images/weixin.jpg" width="50px" height="50px" /></button>
-                        </form>
-                        </div>
-';
+            <div class="card-inner">
+            <p class="card-heading">请输入充值金额</p>
+            <form class="vmqpay" name="vmqpay" action="/user/payment/purchase/vmqpay" method="get">
+                <input class="form-control maxwidth-edit" id="price" name="price" placeholder="输入充值金额后，点击你要付款的应用图标即可" autofocus="autofocus" type="number" min="0.01" max="1000" step="0.01" required="required">
+                <br>
+                <button class="btn btn-flat waves-attach" id="btnSubmit" type="submit" name="type" value="2" ><img src="/images/alipay.jpg" width="50px" height="50px" /></button>
+                <button class="btn btn-flat waves-attach" id="btnSubmit" type="submit" name="type" value="1" ><img src="/images/weixin.jpg" width="50px" height="50px" /></button>
+            </form>
+            </div>
+        ';
     }
-	
-    public function getReturnHTML($request, $response, $args)
-    {
-        // TODO: Implement getReturnHTML() method.
-    }
-
-    public function getStatus($request, $response, $args)
-    {
-        // TODO: Implement getStatus() method.
-    }
-
 }

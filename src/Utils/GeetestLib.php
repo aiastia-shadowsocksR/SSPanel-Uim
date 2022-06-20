@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Utils;
 
 /**
@@ -7,7 +9,7 @@ namespace App\Utils;
  *
  * @author Tanxu
  */
-class GeetestLib
+final class GeetestLib
 {
     public const GT_SDK_VERSION = 'php_3.2.0';
 
@@ -26,60 +28,29 @@ class GeetestLib
      * 判断极验服务器是否down机
      *
      * @param null $user_id
-     * @return int
      */
-    public function pre_process($user_id = null)
+    public function preProcess($user_id = null): int
     {
         $url = 'http://api.geetest.com/register.php?gt=' . $this->captcha_id;
-        if (($user_id != null) and is_string($user_id)) {
-            $url = $url . '&user_id=' . $user_id;
+        if (($user_id !== null) and is_string($user_id)) {
+            $url .= '&user_id=' . $user_id;
         }
-        $challenge = $this->send_request($url);
+        $challenge = $this->sendRequest($url);
 
-        if (strlen($challenge) != 32) {
-            $this->failback_process();
+        if (strlen($challenge) !== 32) {
+            $this->failbackProcess();
 
             return 0;
         }
-        $this->success_process($challenge);
+        $this->successProcess($challenge);
 
         return 1;
     }
 
     /**
-     * @param $challenge
-     */
-    private function success_process($challenge)
-    {
-        $challenge = md5($challenge . $this->private_key);
-        $result = array(
-            'success' => 1,
-            'gt' => $this->captcha_id,
-            'challenge' => $challenge
-        );
-        $this->response = $result;
-    }
-
-    /**
-     *
-     */
-    private function failback_process()
-    {
-        $rnd1 = md5(random_int(0, 100));
-        $rnd2 = md5(random_int(0, 100));
-        $challenge = $rnd1 . substr($rnd2, 0, 2);
-        $result = array(
-            'success' => 0,
-            'gt' => $this->captcha_id,
-            'challenge' => $challenge
-        );
-        $this->response = $result;
-    }
-
-    /**
      * @return mixed
      */
-    public function get_response_str()
+    public function getResponseStr()
     {
         return json_encode($this->response);
     }
@@ -89,7 +60,7 @@ class GeetestLib
      *
      * @return mixed
      */
-    public function get_response()
+    public function getResponse()
     {
         return $this->response;
     }
@@ -101,27 +72,26 @@ class GeetestLib
      * @param      $validate
      * @param      $seccode
      * @param null $user_id
-     * @return int
      */
-    public function success_validate($challenge, $validate, $seccode, $user_id = null)
+    public function successValidate($challenge, $validate, $seccode, $user_id = null): int
     {
-        if (!$this->check_validate($challenge, $validate)) {
+        if (! $this->checkValidate($challenge, $validate)) {
             return 0;
         }
-        $data = array(
+        $data = [
             'seccode' => $seccode,
             'sdk' => self::GT_SDK_VERSION,
-        );
-        if (($user_id != null) and is_string($user_id)) {
+        ];
+        if (($user_id !== null) and is_string($user_id)) {
             $data['user_id'] = $user_id;
         }
         $url = 'http://api.geetest.com/validate.php';
-        $codevalidate = $this->post_request($url, $data);
-        if ($codevalidate == md5($seccode)) {
+        $codevalidate = $this->postRequest($url, $data);
+        if ($codevalidate === md5($seccode)) {
             return 1;
         }
 
-        if ($codevalidate == 'false') {
+        if ($codevalidate === 'false') {
             return 0;
         }
 
@@ -134,16 +104,15 @@ class GeetestLib
      * @param $challenge
      * @param $validate
      * @param $seccode
-     * @return int
      */
-    public function fail_validate($challenge, $validate, $seccode)
+    public function failValidate($challenge, $validate, $seccode): int
     {
         if ($validate) {
             $value = explode('_', $validate);
-            $ans = $this->decode_response($challenge, $value['0']);
-            $bg_idx = $this->decode_response($challenge, $value['1']);
-            $grp_idx = $this->decode_response($challenge, $value['2']);
-            $x_pos = $this->get_failback_pic_ans($bg_idx, $grp_idx);
+            $ans = $this->decodeResponse($challenge, $value['0']);
+            $bg_idx = $this->decodeResponse($challenge, $value['1']);
+            $grp_idx = $this->decodeResponse($challenge, $value['2']);
+            $x_pos = $this->getFailbackPicAns($bg_idx, $grp_idx);
             $answer = abs($ans - $x_pos);
             if ($answer < 4) {
                 return 1;
@@ -155,17 +124,36 @@ class GeetestLib
         return 0;
     }
 
-    /**
-     * @param $challenge
-     * @param $validate
-     * @return bool
-     */
-    private function check_validate($challenge, $validate)
+    private function successProcess($challenge): void
     {
-        if (strlen($validate) != 32) {
+        $challenge = md5($challenge . $this->private_key);
+        $result = [
+            'success' => 1,
+            'gt' => $this->captcha_id,
+            'challenge' => $challenge,
+        ];
+        $this->response = $result;
+    }
+
+    private function failbackProcess(): void
+    {
+        $rnd1 = md5(random_int(0, 100));
+        $rnd2 = md5(random_int(0, 100));
+        $challenge = $rnd1 . substr($rnd2, 0, 2);
+        $result = [
+            'success' => 0,
+            'gt' => $this->captcha_id,
+            'challenge' => $challenge,
+        ];
+        $this->response = $result;
+    }
+
+    private function checkValidate($challenge, $validate): bool
+    {
+        if (strlen($validate) !== 32) {
             return false;
         }
-        if (md5($this->private_key . 'geetest' . $challenge) != $validate) {
+        if (md5($this->private_key . 'geetest' . $challenge) !== $validate) {
             return false;
         }
 
@@ -176,9 +164,10 @@ class GeetestLib
      * GET 请求
      *
      * @param $url
+     *
      * @return mixed|string
      */
-    private function send_request($url)
+    private function sendRequest($url)
     {
         if (function_exists('curl_exec')) {
             $ch = curl_init();
@@ -196,12 +185,12 @@ class GeetestLib
 
             curl_close($ch);
         } else {
-            $opts = array(
-                'http' => array(
+            $opts = [
+                'http' => [
                     'method' => 'GET',
                     'timeout' => self::$connectTimeout + self::$socketTimeout,
-                )
-            );
+                ],
+            ];
             $context = stream_context_create($opts);
             $data = file_get_contents($url, false, $context);
         }
@@ -210,14 +199,14 @@ class GeetestLib
     }
 
     /**
-     *
      * @param       $url
      * @param array $postdata
+     *
      * @return mixed|string
      */
-    private function post_request($url, $postdata = '')
+    private function postRequest($url, array $postdata = [])
     {
-        if (!$postdata) {
+        if (! $postdata) {
             return false;
         }
 
@@ -230,7 +219,7 @@ class GeetestLib
             curl_setopt($ch, CURLOPT_TIMEOUT, self::$socketTimeout);
 
             //不可能执行到的代码
-            if (!$postdata) {
+            if (! $postdata) {
                 curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
             } else {
                 curl_setopt($ch, CURLOPT_POST, 1);
@@ -245,14 +234,14 @@ class GeetestLib
 
             curl_close($ch);
         } elseif ($postdata) {
-            $opts = array(
-                'http' => array(
+            $opts = [
+                'http' => [
                     'method' => 'POST',
                     'header' => "Content-type: application/x-www-form-urlencoded\r\n" . 'Content-Length: ' . strlen($data) . "\r\n",
                     'content' => $data,
-                    'timeout' => self::$connectTimeout + self::$socketTimeout
-                )
-            );
+                    'timeout' => self::$connectTimeout + self::$socketTimeout,
+                ],
+            ];
             $context = stream_context_create($opts);
             $data = file_get_contents($url, false, $context);
         }
@@ -260,22 +249,20 @@ class GeetestLib
         return $data;
     }
 
-
     /**
      * 解码随机参数
      *
      * @param $challenge
      * @param $string
-     * @return int
      */
-    private function decode_response($challenge, $string)
+    private function decodeResponse($challenge, $string): int
     {
         if (strlen($string) > 100) {
             return 0;
         }
-        $key = array();
-        $chongfu = array();
-        $shuzi = array('0' => 1, '1' => 2, '2' => 5, '3' => 10, '4' => 50);
+        $key = [];
+        $chongfu = [];
+        $shuzi = ['0' => 1, '1' => 2, '2' => 5, '3' => 10, '4' => 50];
         $count = 0;
         $res = 0;
         $array_challenge = str_split($challenge);
@@ -300,31 +287,19 @@ class GeetestLib
         return $res;
     }
 
-
-    /**
-     * @param $x_str
-     * @return int
-     */
-    private function get_x_pos_from_str($x_str)
+    private function getXPosFromStr($x_str): int
     {
-        if (strlen($x_str) != 5) {
+        if (strlen($x_str) !== 5) {
             return 0;
         }
         $sum_val = 0;
         $x_pos_sup = 200;
         $sum_val = base_convert($x_str, 16, 10);
         $result = $sum_val % $x_pos_sup;
-        $result = ($result < 40) ? 40 : $result;
-
-        return $result;
+        return $result < 40 ? 40 : $result;
     }
 
-    /**
-     * @param $full_bg_index
-     * @param $img_grp_index
-     * @return int
-     */
-    private function get_failback_pic_ans($full_bg_index, $img_grp_index)
+    private function getFailbackPicAns($full_bg_index, $img_grp_index): int
     {
         $full_bg_name = substr(md5($full_bg_index), 0, 9);
         $bg_name = substr(md5($img_grp_index), 10, 9);
@@ -332,38 +307,36 @@ class GeetestLib
         $answer_decode = '';
         // 通过两个字符串奇数和偶数位拼接产生答案位
         for ($i = 0; $i < 9; $i++) {
-            if ($i % 2 == 0) {
+            if ($i % 2 === 0) {
                 $answer_decode .= $full_bg_name[$i];
-            } elseif ($i % 2 == 1) {
+            } elseif ($i % 2 === 1) {
                 $answer_decode .= $bg_name[$i];
             }
         }
         $x_decode = substr($answer_decode, 4, 5);
-        return $this->get_x_pos_from_str($x_decode);
+        return $this->getXPosFromStr($x_decode);
     }
 
     /**
      * 输入的两位的随机数字,解码出偏移量
      *
      * @param $challenge
+     *
      * @return mixed
      */
     private function decodeRandBase($challenge)
     {
         $base = substr($challenge, 32, 2);
-        $tempArray = array();
+        $tempArray = [];
         for ($i = 0, $iMax = strlen($base); $i < $iMax; $i++) {
             $tempAscii = ord($base[$i]);
-            $result = ($tempAscii > 57) ? ($tempAscii - 87) : ($tempAscii - 48);
+            $result = $tempAscii > 57 ? $tempAscii - 87 : $tempAscii - 48;
             $tempArray[] = $result;
         }
         return $tempArray['0'] * 36 + $tempArray['1'];
     }
 
-    /**
-     * @param $err
-     */
-    private function triggerError($err)
+    private function triggerError($err): void
     {
         trigger_error($err);
     }

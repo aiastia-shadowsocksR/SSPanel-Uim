@@ -1,64 +1,66 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Gateway\CoinPay;
 
-class CoinPayApi
+final class CoinPayApi
 {
     /**
      * 统一下单，CoinPayUnifiedOrder、total_amount、必填
+     *
      * @param CoinPayConfigInterface $config "配置对象"
-     * @param CoinPayUnifiedOrder $inputObj
-     * @param int $timeOut
-     * @return string
+     *
      * @throws CoinPayException
      */
-    public static function unifiedOrder($config, $inputObj, $timeOut = 6)
+    public static function unifiedOrder(CoinPayConfigInterface $config, CoinPayUnifiedOrder $inputObj, int $timeOut = 6): string
     {
-        if (!$inputObj->IsSubjectSet()) {
-            throw new CoinPayException("缺少统一支付接口必填参数subject！");
-        } else if (!$inputObj->IsTimestampSet()) {
-            throw new CoinPayException("缺少统一支付接口必填参数timestamp！");
-        } else if (!$inputObj->IsOut_trade_noSet()) {
-            throw new CoinPayException("缺少统一支付接口必填参数out_trade_no！");
-        } else if (!$inputObj->IsTotal_amountSet()) {
-            throw new CoinPayException("缺少统一支付接口必填参数total_amount！");
+        if (! $inputObj->isSubjectSet()) {
+            throw new CoinPayException('缺少统一支付接口必填参数subject！');
+        }
+        if (! $inputObj->isTimestampSet()) {
+            throw new CoinPayException('缺少统一支付接口必填参数timestamp！');
+        }
+        if (! $inputObj->isOutTradeNoSet()) {
+            throw new CoinPayException('缺少统一支付接口必填参数out_trade_no！');
+        }
+        if (! $inputObj->isTotalAmountSet()) {
+            throw new CoinPayException('缺少统一支付接口必填参数total_amount！');
         }
 
         //异步通知url未设置，则使用配置文件中的url
-        if (!$inputObj->IsNotify_urlSet() && $config->GetNotifyUrl() != "") {
-            $inputObj->SetNotify_url($config->GetNotifyUrl());
+        if (! $inputObj->isNotifyUrlSet() && $config->getNotifyUrl() !== '') {
+            $inputObj->setNotifyUrl($config->getNotifyUrl());
         }
-        if (!$inputObj->IsReturn_urlSet() && $config->GetReturnUrl() != "") {
-            $inputObj->SetReturn_url($config->GetReturnUrl());
+        if (! $inputObj->isReturnUrlSet() && $config->getReturnUrl() !== '') {
+            $inputObj->setReturnUrl($config->getReturnUrl());
         }
-        if (!$inputObj->IsAttachSet() && $config->GetAttach() != "") {
-            $inputObj->SetAttach($config->GetAttach());
+        if (! $inputObj->isAttachSet() && $config->getAttach() !== '') {
+            $inputObj->setAttach($config->getAttach());
         }
-        if (!$inputObj->IsBodySet() && $config->GetBody() != "") {
-            $inputObj->SetBody($config->GetBody());
+        if (! $inputObj->isBodySet() && $config->getBody() !== '') {
+            $inputObj->setBody($config->getBody());
         }
-        if (!$inputObj->IsTransCurrencySet() && $config->GetTransCurrency() != "") {
-            $inputObj->SetTransCurrency($config->GetTransCurrency());
+        if (! $inputObj->isTransCurrencySet() && $config->getTransCurrency() !== '') {
+            $inputObj->setTransCurrency($config->getTransCurrency());
         }
 
         // 设置AppID于随机字符串
-        $inputObj->SetAppid($config->GetAppId());
-        $inputObj->SetNonce_str(self::getNonceStr());
+        $inputObj->setAppid($config->getAppId());
+        $inputObj->setNonce_str(self::getNonceStr());
 
         //签名
-        $inputObj->SetSign($config->GetSecret());
-        return http_build_query($inputObj->ReturnArray());
+        $inputObj->setSign($config->getSecret());
+        return http_build_query($inputObj->returnArray());
     }
 
     /**
      * 返回随机字符串
-     * @param int $length
-     * @return string
      */
-    public static function getNonceStr($length = 32)
+    public static function getNonceStr(int $length = 32): string
     {
-        $chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-        $str = "";
+        $chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        $str = '';
         for ($i = 0; $i < $length; $i++) {
             $str .= substr($chars, mt_rand(0, strlen($chars) - 1), 1);
         }

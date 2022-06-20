@@ -6,7 +6,7 @@
 </footer>
 
 <!-- js -->
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0"></script>
+<script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
 {if isset($geetest_html)}
     <script src="//static.geetest.com/static/tools/gt.js"></script>
 {/if}
@@ -14,5 +14,5 @@
 <script src="/theme/material/js/project.min.js"></script>
 
 </body>
-
+{include file='live_chat.tpl'}
 </html>

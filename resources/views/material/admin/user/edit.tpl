@@ -18,6 +18,11 @@
                                        value="{$edit_user->email}">
                             </div>
                             <div class="form-group form-group-label">
+                                <label class="floating-label" for="user_name">用户昵称</label>
+                                <input class="form-control maxwidth-edit" id="user_name" type="text"
+                                       value="{$edit_user->user_name}">
+                            </div>
+                            <div class="form-group form-group-label">
                                 <label class="floating-label" for="remark">备注(仅对管理员可见)</label>
                                 <input class="form-control maxwidth-edit" id="remark" type="text"
                                        value="{$edit_user->remark}">
@@ -84,17 +89,17 @@
                             <div class="form-group form-group-label">
                                 <label class="floating-label" for="last_detect_ban_time">最后一次被封禁的时间</label>
                                 <input class="form-control maxwidth-edit" id="last_detect_ban_time" type="text"
-                                       value="{$edit_user->last_detect_ban_time()}" readonly>
+                                       value="{$edit_user->lastDetectBanTime()}" readonly>
                             </div>
                             <div class="form-group form-group-label">
                                 <label class="floating-label" for="relieve_time">当前解封时间</label>
                                 <input class="form-control maxwidth-edit" id="relieve_time" type="text"
-                                       value="{$edit_user->relieve_time()}" readonly>
+                                       value="{$edit_user->relieveTime()}" readonly>
                             </div>
                             <div class="form-group form-group-label">
                                 <label class="floating-label" for="detect_ban_number">累计封禁次数</label>
                                 <input class="form-control maxwidth-edit" id="detect_ban_number" type="text"
-                                       value="{if $edit_user->detect_ban_number()==0}标杆用户，没有被封禁过耶{else}太坏了，这位用户累计被封禁过 {$edit_user->detect_ban_number()} 次呢{/if}" readonly>
+                                       value="{if $edit_user->detectBanNumber()==0}标杆用户，没有被封禁过耶{else}太坏了，这位用户累计被封禁过 {$edit_user->detectBanNumber()} 次呢{/if}" readonly>
                             </div>
                             <div class="form-group form-group-label">
                                 <label class="floating-label" for="all_detect_number">累计违规次数</label>
@@ -165,12 +170,12 @@
                     <div class="card-main">
                         <div class="card-inner">
                             <div class="form-group form-group-label">
-                                <label class="floating-label" for="auto_reset_day">自动重置流量日</label>
+                                <label class="floating-label" for="auto_reset_day">免费用户流量重置日</label>
                                 <input class="form-control maxwidth-edit" id="auto_reset_day" type="number"
                                        value="{$edit_user->auto_reset_day}">
                             </div>
                             <div class="form-group form-group-label">
-                                <label class="floating-label" for="auto_reset_bandwidth">重置流量值(GB)</label>
+                                <label class="floating-label" for="auto_reset_bandwidth">重置的免费流量(GB)</label>
                                 <input class="form-control maxwidth-edit" id="auto_reset_bandwidth" type="number"
                                        value="{$edit_user->auto_reset_bandwidth}">
                             </div>
@@ -247,12 +252,12 @@
                             <div class="form-group form-group-label">
                                 <label class="floating-label" for="node_speedlimit">禁止用户访问的IP，一行一个</label>
                                 <textarea class="form-control maxwidth-edit" id="forbidden_ip"
-                                          rows="8">{$edit_user->get_forbidden_ip()}</textarea>
+                                          rows="8">{$edit_user->getForbiddenIp()}</textarea>
                             </div>
                             <div class="form-group form-group-label">
                                 <label class="floating-label" for="node_speedlimit">禁止用户访问的端口，一行一个</label>
                                 <textarea class="form-control maxwidth-edit" id="forbidden_port"
-                                          rows="8">{$edit_user->get_forbidden_port()}</textarea>
+                                          rows="8">{$edit_user->getForbiddenPort()}</textarea>
                             </div>
                         </div>
                     </div>
@@ -316,6 +321,7 @@
                     node_speedlimit: $$getValue('node_speedlimit'),
                     method: $$getValue('method'),
                     remark: $$getValue('remark'),
+                    user_name: $$getValue('user_name'),
                     money: $$getValue('money'),
                     enable,
                     is_admin,

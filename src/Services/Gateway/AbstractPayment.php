@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: tonyzou
@@ -8,50 +11,73 @@
 
 namespace App\Services\Gateway;
 
-use App\Models\Paylist;
-use App\Models\Payback;
-use App\Models\User;
 use App\Models\Code;
+use App\Models\Payback;
+use App\Models\Paylist;
+use App\Models\Setting;
+use App\Models\User;
 use App\Utils\Telegram;
-use Slim\Http\{Request, Response};
+use Psr\Http\Message\ResponseInterface;
+use Ramsey\Uuid\Uuid;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
 abstract class AbstractPayment
 {
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    abstract public function purchase($request, $response, $args);
+    abstract public function purchase(Request $request, Response $response, array $args): ResponseInterface;
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    abstract public function notify($request, $response, $args);
+    abstract public function notify(Request $request, Response $response, array $args): ResponseInterface;
 
     /**
-     * @param Request   $request
-     * @param Response  $response
-     * @param array     $args
+     * 支付网关的 codeName, 规则为 [0-9a-zA-Z_]*
      */
-    abstract public function getReturnHTML($request, $response, $args);
+    abstract public static function _name(): string;
 
     /**
-     * @param Request   $request
-     * @param Response  $response
+     * 是否启用支付网关
+     *
+     * TODO: 传入目前用户信, etc..
+     */
+    abstract public static function _enable(): bool;
+
+    /**
+     * 显示给用户的名称
+     */
+    abstract public static function _readableName(): string;
+
+    /**
      * @param array     $args
      */
-    abstract public function getStatus($request, $response, $args);
+    public function getReturnHTML(Request $request, Response $response, array $args): ResponseInterface
+    {
+        return $response->write('ok');
+    }
 
-    abstract public function getPurchaseHTML();
+    /**
+     * @param array     $args
+     */
+    public function getStatus(Request $request, Response $response, array $args): ResponseInterface
+    {
+        $p = Paylist::where('tradeno', $_POST['pid'])->first();
+        return $response->withJson([
+            'ret' => 1,
+            'result' => $p->satatus,
+        ]);
+    }
+
+    abstract public static function getPurchaseHTML(): string;
 
     public function postPayment($pid, $method)
     {
         $p = Paylist::where('tradeno', $pid)->first();
 
-        if ($p->status == 1) {
+        if ($p->status === 1) {
             return json_encode(['errcode' => 0]);
         }
 
@@ -69,24 +95,16 @@ abstract class AbstractPayment
         $codeq->userid = $user->id;
         $codeq->save();
 
-        if ($user->ref_by >= 1) {
-            $gift_user = User::where('id', '=', $user->ref_by)->first();
-            $gift_user->money += ($codeq->number * ($_ENV['code_payback'] / 100));
-            $gift_user->save();
-            $Payback = new Payback();
-            $Payback->total = $codeq->number;
-            $Payback->userid = $user->id;
-            $Payback->ref_by = $user->ref_by;
-            $Payback->ref_get = $codeq->number * ($_ENV['code_payback'] / 100);
-            $Payback->datetime = time();
-            $Payback->save();
+        // 返利
+        if ($user->ref_by > 0 && Setting::obtain('invitation_mode') === 'after_recharge') {
+            Payback::rebate($user->id, $p->total);
         }
 
-        if ($_ENV['enable_donate'] == true) {
-            if ($user->is_hide == 1) {
-                Telegram::Send('一位不愿透露姓名的大老爷给我们捐了 ' . $codeq->number . ' 元!');
+        if ($_ENV['enable_donate'] === true) {
+            if ($user->is_hide === 1) {
+                Telegram::send('一位不愿透露姓名的大老爷给我们捐了 ' . $codeq->number . ' 元!');
             } else {
-                Telegram::Send($user->user_name . ' 大老爷给我们捐了 ' . $codeq->number . ' 元！');
+                Telegram::send($user->user_name . ' 大老爷给我们捐了 ' . $codeq->number . ' 元！');
             }
         }
         return 0;
@@ -94,18 +112,26 @@ abstract class AbstractPayment
 
     public static function generateGuid()
     {
-        mt_srand((double)microtime() * 10000);
-        $charid = strtoupper(md5(uniqid(mt_rand() + time(), true)));
-        $hyphen = chr(45);
-        $uuid = chr(123)
-            . substr($charid, 0, 8) . $hyphen
-            . substr($charid, 8, 4) . $hyphen
-            . substr($charid, 12, 4) . $hyphen
-            . substr($charid, 16, 4) . $hyphen
-            . substr($charid, 20, 12)
-            . chr(125);
-        $uuid = str_replace(['}', '{', '-'], '', $uuid);
-        $uuid = substr($uuid, 0, 8);
-        return $uuid;
+        return substr(Uuid::uuid4()->toString(), 0, 8);
+    }
+
+    protected static function getCallbackUrl()
+    {
+        return $_ENV['baseUrl'] . '/payment/notify/' . get_called_class()::_name();
+    }
+
+    protected static function getUserReturnUrl()
+    {
+        return $_ENV['baseUrl'] . '/user/payment/return/' . get_called_class()::_name();
+    }
+
+    protected static function getActiveGateway($key)
+    {
+        $payment_gateways = Setting::where('item', '=', 'payment_gateway')->first();
+        $active_gateways = json_decode($payment_gateways->value);
+        if (in_array($key, $active_gateways)) {
+            return true;
+        }
+        return false;
     }
 }

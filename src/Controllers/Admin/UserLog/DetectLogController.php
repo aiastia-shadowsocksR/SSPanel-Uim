@@ -1,62 +1,54 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controllers\Admin\UserLog;
 
-use App\Controllers\AdminController;
-use App\Models\{
-    User,
-    DetectLog
-};
-use Slim\Http\{
-    Request,
-    Response
-};
+use App\Controllers\BaseController;
+use App\Models\DetectLog;
+use App\Models\User;
+use App\Utils\ResponseHelper;
 use Psr\Http\Message\ResponseInterface;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-class DetectLogController extends AdminController
+final class DetectLogController extends BaseController
 {
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function index($request, $response, $args): ResponseInterface
+    public function index(Request $request, Response $response, array $args): ResponseInterface
     {
         $id = $args['id'];
         $user = User::find($id);
-        $table_config['total_column'] = array(
-            'id'          => 'ID',
-            'node_id'     => '节点ID',
-            'node_name'   => '节点名',
-            'list_id'     => '规则ID',
-            'rule_name'   => '规则名',
-            'rule_text'   => '规则描述',
-            'rule_regex'  => '规则正则表达式',
-            'rule_type'   => '规则类型',
-            'datetime'    => '时间'
-        );
-        $table_config['default_show_column'] = array_keys($table_config['total_column']);
-        $table_config['ajax_url'] = 'detect/ajax';
 
         return $response->write(
             $this->view()
-                ->assign('table_config', $table_config)
+                ->assign('table_config', ResponseHelper::buildTableConfig([
+                    'id' => 'ID',
+                    'node_id' => '节点ID',
+                    'node_name' => '节点名',
+                    'list_id' => '规则ID',
+                    'rule_name' => '规则名',
+                    'rule_text' => '规则描述',
+                    'rule_regex' => '规则正则表达式',
+                    'rule_type' => '规则类型',
+                    'datetime' => '时间',
+                ], 'detect/ajax'))
                 ->assign('user', $user)
                 ->display('admin/user/detect.tpl')
         );
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function ajax($request, $response, $args): ResponseInterface
+    public function ajax(Request $request, Response $response, array $args): ResponseInterface
     {
-        $user  = User::find($args['id']);
+        $user = User::find($args['id']);
         $query = DetectLog::getTableDataFromAdmin(
             $request,
-            static function (&$order_field) {
+            static function (&$order_field): void {
                 if (in_array($order_field, ['node_name'])) {
                     $order_field = 'node_id';
                 }
@@ -64,42 +56,42 @@ class DetectLogController extends AdminController
                     $order_field = 'list_id';
                 }
             },
-            static function ($query) use ($user) {
+            static function ($query) use ($user): void {
                 $query->where('user_id', $user->id);
             }
         );
 
-        $data  = [];
+        $data = [];
         foreach ($query['datas'] as $value) {
             /** @var DetectLog $value */
 
-            if ($value->rule() == null) {
-                DetectLog::rule_is_null($value);
+            if ($value->rule() === null) {
+                DetectLog::ruleIsNull($value);
                 continue;
             }
-            if ($value->node() == null) {
-                DetectLog::node_is_null($value);
+            if ($value->node() === null) {
+                DetectLog::nodeIsNull($value);
                 continue;
             }
-            $tempdata               = [];
-            $tempdata['id']         = $value->id;
-            $tempdata['node_id']    = $value->node_id;
-            $tempdata['node_name']  = $value->node_name();
-            $tempdata['list_id']    = $value->list_id;
-            $tempdata['rule_name']  = $value->rule_name();
-            $tempdata['rule_text']  = $value->rule_text();
-            $tempdata['rule_regex'] = $value->rule_regex();
-            $tempdata['rule_type']  = $value->rule_type();
-            $tempdata['datetime']   = $value->datetime();
+            $tempdata = [];
+            $tempdata['id'] = $value->id;
+            $tempdata['node_id'] = $value->node_id;
+            $tempdata['node_name'] = $value->nodeName();
+            $tempdata['list_id'] = $value->list_id;
+            $tempdata['rule_name'] = $value->ruleName();
+            $tempdata['rule_text'] = $value->ruleText();
+            $tempdata['rule_regex'] = $value->ruleRegex();
+            $tempdata['rule_type'] = $value->ruleType();
+            $tempdata['datetime'] = $value->datetime();
 
             $data[] = $tempdata;
         }
 
         return $response->withJson([
-            'draw'            => $request->getParam('draw'),
-            'recordsTotal'    => DetectLog::where('user_id', $user->id)->count(),
+            'draw' => $request->getParam('draw'),
+            'recordsTotal' => DetectLog::where('user_id', $user->id)->count(),
             'recordsFiltered' => $query['count'],
-            'data'            => $data,
+            'data' => $data,
         ]);
     }
 }

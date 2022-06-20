@@ -1,31 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controllers;
 
-use App\Models\{
-    User,
-    PasswordReset
-};
-use App\Utils\Hash;
+use App\Models\PasswordReset;
+use App\Models\User;
 use App\Services\Password;
-use Slim\Http\{
-    Request,
-    Response
-};
+use App\Utils\Hash;
+use App\Utils\ResponseHelper;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-/***
+/*
  * Class Password
+ *
  * @package App\Controllers
  * 密码重置
  */
-class PasswordController extends BaseController
+final class PasswordController extends BaseController
 {
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function reset($request, $response, $args)
+    public function reset(Request $request, Response $response, array $args)
     {
         return $response->write(
             $this->view()->display('password/reset.tpl')
@@ -33,103 +31,82 @@ class PasswordController extends BaseController
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function handleReset($request, $response, $args)
+    public function handleReset(Request $request, Response $response, array $args)
     {
         $email = strtolower($request->getParam('email'));
-        $user  = User::where('email', $email)->first();
-        if ($user == null) {
-            return $response->withJson([
-                'ret' => 0,
-                'msg' => '此邮箱不存在'
-            ]);
+        $user = User::where('email', $email)->first();
+        if ($user === null) {
+            return ResponseHelper::error($response, '此邮箱不存在');
         }
         if (Password::sendResetEmail($email)) {
             $msg = '重置邮件已经发送,请检查邮箱.';
         } else {
             $msg = '邮件发送失败，请联系网站管理员。';
         }
-        return $response->withJson([
-            'ret' => 1,
-            'msg' => $msg
-        ]);
+        return ResponseHelper::successfully($response, $msg);
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function token($request, $response, $args)
+    public function token(Request $request, Response $response, array $args)
     {
+        $token = PasswordReset::where('token', $args['token'])->where('expire_time', '>', time())->orderBy('id', 'desc')->first();
+        if ($token === null) {
+            return $response->withStatus(302)->withHeader('Location', '/password/reset');
+        }
         return $response->write(
-            $this->view()->assign('token', $args['token'])->display('password/token.tpl')
+            $this->view()->display('password/token.tpl')
         );
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function handleToken($request, $response, $args)
+    public function handleToken(Request $request, Response $response, array $args)
     {
         $tokenStr = $args['token'];
         $password = $request->getParam('password');
         $repasswd = $request->getParam('repasswd');
 
-        if ($password != $repasswd) {
-            return $response->withJson([
-                'ret' => 0,
-                'msg' => '两次输入不符合'
-            ]);
+        if ($password !== $repasswd) {
+            return ResponseHelper::error($response, '两次输入不符合');
         }
 
         if (strlen($password) < 8) {
-            return $response->withJson([
-                'ret' => 0,
-                'msg' => '密码太短啦'
-            ]);
+            return ResponseHelper::error($response, '密码太短啦');
         }
 
-        // check token
-        $token = PasswordReset::where('token', $tokenStr)->where('expire_time', '>', time())->orderBy('id', 'desc')->first();
-        if ($token == null) {
-            return $response->withJson([
-                'ret' => 0,
-                'msg' => '链接已经失效，请重新获取'
-            ]);
-        }
         /** @var PasswordReset $token */
+        $token = PasswordReset::where('token', $tokenStr)->where('expire_time', '>', time())->orderBy('id', 'desc')->first();
+        if ($token === null) {
+            return ResponseHelper::error($response, '链接已经失效，请重新获取');
+        }
+
         $user = $token->getUser();
-        if ($user == null) {
-            return $response->withJson([
-                'ret' => 0,
-                'msg' => '链接已经失效，请重新获取'
-            ]);
+        if ($user === null) {
+            return ResponseHelper::error($response, '链接已经失效，请重新获取');
         }
 
         // reset password
-        $hashPassword    = Hash::passwordHash($password);
-        $user->pass      = $hashPassword;
+        $hashPassword = Hash::passwordHash($password);
+        $user->pass = $hashPassword;
         $user->ga_enable = 0;
 
-        if (!$user->save()) {
-            $rs['ret'] = 0;
-            $rs['msg'] = '重置失败，请重试';
-        } else {
-            $rs['ret'] = 1;
-            $rs['msg'] = '重置成功';
-            $user->clean_link();
-
-            // 禁止链接多次使用
-            $token->expire_time = time();
-            $token->save();
+        if (! $user->save()) {
+            return ResponseHelper::error($response, '重置失败，请重试');
         }
 
-        return $response->withJson($rs);
+        if ($_ENV['enable_forced_replacement'] === true) {
+            $user->cleanLink();
+        }
+
+        // 禁止链接多次使用
+        $token->expire_time = time();
+        $token->save();
+
+        return ResponseHelper::successfully($response, '重置成功');
     }
 }

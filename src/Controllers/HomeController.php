@@ -1,73 +1,61 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controllers;
 
 use App\Models\InviteCode;
-use App\Utils\{
-    TelegramProcess,
-    Telegram\Process
-};
-use Slim\Http\{
-    Request,
-    Response
-};
+use App\Utils\Telegram\Process;
+use App\Utils\TelegramProcess;
 use Psr\Http\Message\ResponseInterface;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
 /**
  *  HomeController
  */
-class HomeController extends BaseController
+final class HomeController extends BaseController
 {
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function index($request, $response, $args): ResponseInterface
+    public function index(Request $request, Response $response, array $args): ResponseInterface
     {
         return $response->write($this->view()->fetch('index.tpl'));
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function code($request, $response, $args): ResponseInterface
+    public function code(Request $request, Response $response, array $args): ResponseInterface
     {
         $codes = InviteCode::where('user_id', '=', '0')->take(10)->get();
         return $response->write($this->view()->assign('codes', $codes)->fetch('code.tpl'));
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function tos($request, $response, $args): ResponseInterface
+    public function tos(Request $request, Response $response, array $args): ResponseInterface
     {
         return $response->write($this->view()->fetch('tos.tpl'));
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function staff($request, $response, $args): ResponseInterface
+    public function staff(Request $request, Response $response, array $args): ResponseInterface
     {
         return $response->write($this->view()->fetch('staff.tpl'));
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function telegram($request, $response, $args): ResponseInterface
+    public function telegram(Request $request, Response $response, array $args): ResponseInterface
     {
         $token = $request->getQueryParam('token');
-        if ($token == $_ENV['telegram_request_token']) {
+        if ($token === $_ENV['telegram_request_token']) {
             if ($_ENV['use_new_telegram_bot']) {
                 Process::index();
             } else {
@@ -81,31 +69,25 @@ class HomeController extends BaseController
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function page404($request, $response, $args): ResponseInterface
+    public function page404(Request $request, Response $response, array $args): ResponseInterface
     {
         return $response->write($this->view()->fetch('404.tpl'));
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function page405($request, $response, $args): ResponseInterface
+    public function page405(Request $request, Response $response, array $args): ResponseInterface
     {
         return $response->write($this->view()->fetch('405.tpl'));
     }
 
     /**
-     * @param Request   $request
-     * @param Response  $response
      * @param array     $args
      */
-    public function page500($request, $response, $args): ResponseInterface
+    public function page500(Request $request, Response $response, array $args): ResponseInterface
     {
         return $response->write($this->view()->fetch('500.tpl'));
     }

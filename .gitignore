@@ -17,11 +17,13 @@ index.html
 config/.config.php
 config/.config.php.bak
 config/appprofile.php
+config/ClientDownloadVersion.json
 
+public/mazer
 public/ssr-download/
 public/clients/
 public/images/*.*
-public/theme/material/css/images/bg
+!public/theme/material/css/images/bg/*
 
 storage/framework/smarty/cache/*
 storage/framework/smarty/compile/*
@@ -36,3 +38,6 @@ storage/*.*
 public/.user.ini
 
 resources/views/material/analytics.tpl
+
+.envrc.local
+.direnv/

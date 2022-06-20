@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 /**
  * Code Model
  */
-class Code extends Model
+final class Code extends Model
 {
     protected $connection = 'default';
 
@@ -22,20 +24,20 @@ class Code extends Model
     /**
      * 用户 ID
      */
-    public function userid(): string
+    public function userid(): int
     {
-        return $this->userid == 0 ? '未使用' : $this->userid;
+        return $this->userid;
     }
 
     /**
      * 用户名
      */
-    public function user_name(): string
+    public function userName(): string
     {
-        if ($this->userid == 0) {
+        if ($this->userid === 0) {
             return '未使用';
         }
-        if ($this->user() == null) {
+        if ($this->user() === null) {
             return '用户已不存在';
         }
         return $this->user()->user_name;
@@ -76,7 +78,7 @@ class Code extends Model
      */
     public function isused(): string
     {
-        return $this->isused == 1 ? '已使用' : '未使用';
+        return $this->isused === 1 ? '已使用' : '未使用';
     }
 
     /**

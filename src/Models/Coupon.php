@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-class Coupon extends Model
+final class Coupon extends Model
 {
     protected $connection = 'default';
     protected $table = 'coupon';
@@ -14,14 +16,14 @@ class Coupon extends Model
 
     public function order($shop)
     {
-        if ($this->attributes['shop'] == '') {
+        if ($this->attributes['shop'] === '') {
             return true;
         }
 
         $shop_array = explode(',', $this->attributes['shop']);
 
         foreach ($shop_array as $shopid) {
-            if ($shopid == $shop) {
+            if ($shopid === $shop) {
                 return true;
             }
         }

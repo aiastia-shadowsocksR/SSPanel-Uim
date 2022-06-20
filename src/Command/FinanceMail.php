@@ -1,21 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Models\User;
-use App\Utils\Telegram;
 use App\Utils\DatatablesHelper;
+use App\Utils\Telegram;
 use Ozdemir\Datatables\Datatables;
 
-class FinanceMail extends Command
+final class FinanceMail extends Command
 {
-    public $description = ''
-        . '├─=: php xcat FinanceMail [选项]' . PHP_EOL
-        . '│ ├─ day                     - 日报' . PHP_EOL
-        . '│ ├─ week                    - 周报' . PHP_EOL
-        . '│ ├─ month                   - 月报' . PHP_EOL;
+    public $description = <<<EOL
+├─=: php xcat FinanceMail [选项]
+│ ├─ day                     - 日报
+│ ├─ week                    - 周报
+│ ├─ month                   - 月报
+EOL;
 
-    public function boot()
+    public function boot(): void
     {
         if (count($this->argv) === 2) {
             echo $this->description;
@@ -29,7 +32,7 @@ class FinanceMail extends Command
         }
     }
 
-    public function day()
+    public function day(): void
     {
         $datatables = new Datatables(new DatatablesHelper());
         $datatables->query(
@@ -65,14 +68,14 @@ class FinanceMail extends Command
                 'news/finance.tpl',
                 [
                     'title' => '财务日报',
-                    'text'  => $text_html
+                    'text' => $text_html,
                 ],
                 []
             );
         }
 
         if ($_ENV['finance_public']) {
-            Telegram::Send(
+            Telegram::send(
                 '新鲜出炉的财务日报~' . PHP_EOL .
                 '昨日总收入笔数:' . $income_count . PHP_EOL .
                 '昨日总收入金额:' . $income_total . PHP_EOL .
@@ -81,7 +84,7 @@ class FinanceMail extends Command
         }
     }
 
-    public function week()
+    public function week(): void
     {
         $datatables = new Datatables(new DatatablesHelper());
         $datatables->query(
@@ -110,14 +113,14 @@ class FinanceMail extends Command
                 'news/finance.tpl',
                 [
                     'title' => '财务周报',
-                    'text'  => $text_html
+                    'text' => $text_html,
                 ],
                 []
             );
         }
 
         if ($_ENV['finance_public']) {
-            Telegram::Send(
+            Telegram::send(
                 '新鲜出炉的财务周报~' . PHP_EOL .
                 '上周总收入笔数:' . $income_count . PHP_EOL .
                 '上周总收入金额:' . $income_total . PHP_EOL .
@@ -126,7 +129,7 @@ class FinanceMail extends Command
         }
     }
 
-    public function month()
+    public function month(): void
     {
         $datatables = new Datatables(new DatatablesHelper());
         $datatables->query(
@@ -153,14 +156,14 @@ class FinanceMail extends Command
                 'news/finance.tpl',
                 [
                     'title' => '财务月报',
-                    'text'  => $text_html
+                    'text' => $text_html,
                 ],
                 []
             );
         }
 
         if ($_ENV['finance_public']) {
-            Telegram::Send(
+            Telegram::send(
                 '新鲜出炉的财务月报~' . PHP_EOL .
                 '上月总收入笔数:' . $income_count . PHP_EOL .
                 '上月总收入金额:' . $income_total . PHP_EOL .

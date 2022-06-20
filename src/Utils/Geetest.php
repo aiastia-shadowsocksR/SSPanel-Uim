@@ -1,21 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Utils;
 
-use App\Services\Config;
+use App\Models\Setting;
 
 /**
  * 极验行为式验证安全平台，php 网站主后台包含的库文件
  *
  * @author Tanxu
  */
-class Geetest
+final class Geetest
 {
     public static function get($user_id = null)
     {
-        $GtSdk = new GeetestLib($_ENV['geetest_id'], $_ENV['geetest_key']);
-        $status = $GtSdk->pre_process($user_id);
-        $ret = json_decode($GtSdk->get_response_str());
+        $configs = Setting::getClass('geetest');
+        $GtSdk = new GeetestLib($configs['geetest_id'], $configs['geetest_key']);
+        $status = $GtSdk->preProcess($user_id);
+        $ret = json_decode($GtSdk->getResponseStr());
         session_start();
         $_SESSION['gtserver'] = $status;
         $_SESSION['user_id'] = $user_id;
@@ -25,10 +28,11 @@ class Geetest
     public static function verify($geetest_challenge, $geetest_validate, $geetest_seccode)
     {
         session_start();
-        $GtSdk = new GeetestLib($_ENV['geetest_id'], $_ENV['geetest_key']);
+        $configs = Setting::getClass('geetest');
+        $GtSdk = new GeetestLib($configs['geetest_id'], $configs['geetest_key']);
         $user_id = $_SESSION['user_id'];
-        if ($_SESSION['gtserver'] == 1) {
-            $result = $GtSdk->success_validate($geetest_challenge, $geetest_validate, $geetest_seccode, $user_id);
+        if ($_SESSION['gtserver'] === 1) {
+            $result = $GtSdk->successValidate($geetest_challenge, $geetest_validate, $geetest_seccode, $user_id);
             if ($result) {
                 return true;
             }
@@ -36,7 +40,7 @@ class Geetest
             return false;
         }
 
-        if ($GtSdk->fail_validate($geetest_challenge, $geetest_validate, $geetest_seccode)) {
+        if ($GtSdk->failValidate($geetest_challenge, $geetest_validate, $geetest_seccode)) {
             return true;
         }
 

@@ -3,13 +3,25 @@
 {$pre_user = URL::cloneUser($user)}
 
 <style>
-.table {
-    box-shadow: none;
-}
-table tr td:first-child {
-    text-align: right;
-    font-weight: bold;
-}
+    .table {
+        box-shadow: none;
+    }
+
+    table tr td:first-child {
+        text-align: left;
+        font-weight: bold;
+    }
+
+    #connection-info {
+        overflow: auto;
+        width: 100%;
+    }
+
+    #connection-info-table {
+        width: 100%;
+        table-layout: fixed;
+        word-break: break-all;
+    }
 </style>
 
 <main class="content">
@@ -94,9 +106,9 @@ table tr td:first-child {
                                 <div class="nodemiddle node-flex">
                                     <div class="nodetype">
                                         {if $user->node_connector!=0}
-                                            <dd>{$user->online_ip_count()} / {$user->node_connector}</dd>
+                                            <dd>{$user->onlineIpCount()} / {$user->node_connector}</dd>
                                         {else}
-                                            <dd>{$user->online_ip_count()} / 不限制</dd>
+                                            <dd>{$user->onlineIpCount()} / 不限制</dd>
                                         {/if}
                                     </div>
                                 </div>
@@ -151,8 +163,8 @@ table tr td:first-child {
                         <div class="card-main">
                         <div class="card-inner margin-bottom-no">
                             <p class="card-heading" style="margin-bottom: 0;"><i class="icon icon-md">account_circle</i>流量使用情况</p>
-                                {if $user->valid_use_loop() != '未购买套餐.'}
-                                <p>下次流量重置时间：{$user->valid_use_loop()}</p>
+                                {if $user->validUseLoop() != '未购买套餐.'}
+                                <p>下次流量重置时间：{$user->validUseLoop()}</p>
                                 {/if}
                                 <div class="progressbar">
                                     <div class="before"></div>
@@ -162,7 +174,7 @@ table tr td:first-child {
                                         <div class="label la-top">
                                             <div class="bar ard color3"></div>
                                             <span class="traffic-info">今日已用</span>
-                                            <code class="card-tag tag-red">{$user->TodayusedTraffic()}</code>
+                                            <code class="card-tag tag-red">{$user->todayUsedTraffic()}</code>
                                         </div>
                                     </div>
                                 </div>
@@ -176,7 +188,7 @@ table tr td:first-child {
                                         <div class="label la-top">
                                             <div class="bar ard color2"><span></span></div>
                                             <span class="traffic-info">过去已用</span>
-                                            <code class="card-tag tag-orange">{$user->LastusedTraffic()}</code>
+                                            <code class="card-tag tag-orange">{$user->lastUsedTraffic()}</code>
                                         </div>
                                     </div>
                                 </div>
@@ -195,34 +207,32 @@ table tr td:first-child {
                                     </div>
                                 </div>
                             </div>
+                            {if $config['enable_checkin'] == true}
                             <div class="card-inner margin-bottom-no">
                                 <p class="card-heading"><i class="icon icon-md">account_circle</i> 签到</p>
-                                    <p>上次签到时间：{$user->lastCheckInTime()}</p>
-                                    <p id="checkin-msg"></p>
-                                    {if $geetest_html != null}
-                                        <div id="popup-captcha"></div>
-                                    {/if}
-                                    {if $config['enable_checkin_captcha'] == true && $user->isAbleToCheckin()}
-                                        <div class="g-recaptcha" data-sitekey="{$recaptcha_sitekey}"></div>
-                                    {/if}
-                                    <div class="card-action">
-                                        <div class="usercheck pull-left">
-                                            {if $user->isAbleToCheckin() }
-                                                <div id="checkin-btn">
-                                                    <button id="checkin" class="btn btn-brand btn-flat"><span
-                                                                class="icon">check</span>&nbsp;点我签到&nbsp;
-                                                        <div><span class="icon">screen_rotation</span>&nbsp;或者摇动手机签到
-                                                        </div>
+                                <p>上次签到时间：{$user->lastCheckInTime()}</p>
+                                <p id="checkin-msg"></p>
+                                {if $geetest_html != null}
+                                    <div id="popup-captcha"></div>
+                                {/if}
+                                {if $config['enable_checkin_captcha'] == true && $config['captcha_provider'] == 'recaptcha' && $user->isAbleToCheckin()}
+                                    <div class="g-recaptcha" data-sitekey="{$recaptcha_sitekey}"></div>
+                                {/if}
+                                <div class="card-action">
+                                    <div class="usercheck pull-left">
+                                        {if $user->isAbleToCheckin() }
+                                            <div id="checkin-btn">
+                                                <button id="checkin" class="btn btn-brand btn-flat"><span class="icon">check</span>&nbsp;点我签到&nbsp;
+                                                    <div><span class="icon">screen_rotation</span>&nbsp;或者摇动手机签到</div>
                                                     </button>
-                                                </div>
-                                            {else}
-                                                <p><a class="btn btn-brand disabled btn-flat" href="#"><span
-                                                                class="icon">check</span>&nbsp;今日已签到</a></p>
-                                            {/if}
-                                        </div>
+                                            </div>
+                                        {else}
+                                            <p><a class="btn btn-brand disabled btn-flat" href="#"><span class="icon">check</span>&nbsp;今日已签到</a></p>
+                                        {/if}
                                     </div>
-                                </dl>
+                                </div>
                             </div>
+                            {/if}
                         </div>
                     </div>
                     <div class="card">
@@ -234,15 +244,15 @@ table tr td:first-child {
                                     <br/>
                                     <strong>查看所有公告请<a href="/user/announcement">点击这里</a></strong>
                                 {/if}
-                                {if $config['enable_admin_contact'] === true}
-                                    <p class="card-heading">管理员联系方式</p>
-                                    {if $config['admin_contact1']!=''}
+                                {if $config['enable_admin_contact'] == true}
+                                    <p class="card-heading">如需帮助，请联系：</p>
+                                    {if $config['admin_contact1'] != ''}
                                         <p>{$config['admin_contact1']}</p>
                                     {/if}
-                                    {if $config['admin_contact2']!=''}
+                                    {if $config['admin_contact2'] != ''}
                                         <p>{$config['admin_contact2']}</p>
                                     {/if}
-                                    {if $config['admin_contact3']!=''}
+                                    {if $config['admin_contact3'] != ''}
                                         <p>{$config['admin_contact3']}</p>
                                     {/if}
                                 {/if}
@@ -270,78 +280,50 @@ table tr td:first-child {
                                 <div class="card-inner">
                                     <div class="tab-content">
                                         <div class="tab-pane fade" id="info_center">
-                                            <p>您的链接信息：</p>
-                                            {if URL::SSRCanConnect($user)}
-                                                {$user = URL::getSSRConnectInfo($pre_user)}
-                                                <table class="table">
+                                            <p>您的连接信息：</p>
+                                            <div id="connection-info">
+                                                <table id="connection-info-table" class="table">
                                                     <tbody>
-                                                        <tr>
-                                                            <td><strong>端口</strong></td>
-                                                            <td>{$user->port}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>密码</strong></td>
-                                                            <td>{$user->passwd}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义加密</strong></td>
-                                                            <td>{$user->method}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义协议</strong></td>
-                                                            <td>{$user->protocol}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义混淆</strong></td>
-                                                            <td>{$user->obfs}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义混淆参数</strong></td>
-                                                            <td>{$user->obfs_param}</td>
-                                                        </tr>
+                                                    <tr>
+                                                        <td><strong>端口</strong></td>
+                                                        <td>{$user->port}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>SS/SSR连接密码</strong></td>
+                                                        <td>{$user->passwd}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>UUID</strong></td>
+                                                        <td>{$user->uuid}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>自定义加密</strong></td>
+                                                        <td>{$user->method}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>自定义协议</strong></td>
+                                                        <td>{$user->protocol}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>自定义混淆</strong></td>
+                                                        <td>{$user->obfs}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>自定义混淆参数</strong></td>
+                                                        <td>{$user->obfs_param}</td>
+                                                    </tr>
                                                     </tbody>
                                                 </table>
-                                                <hr/>
-                                                <p>您好，您目前的 加密方式，混淆或协议 适用于 SSR 客户端，请您选用支持 SSR 的客户端来连接，或者到 <a href="/user/edit">资料编辑</a> 页面修改后再来查看此处。</p>
-                                                <p>同时, ShadowsocksR 单端口多用户的连接不受您设置的影响，您可以在此使用相应的客户端进行连接</p>
-                                            {elseif URL::SSCanConnect($user)}
-                                                {$user = URL::getSSConnectInfo($pre_user)}
-                                                <table class="table">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td><strong>端口</strong></td>
-                                                            <td>{$user->port}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>密码</strong></td>
-                                                            <td>{$user->passwd}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义加密</strong></td>
-                                                            <td>{$user->method}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义混淆</strong></td>
-                                                            <td>{$user->obfs}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>自定义混淆参数</strong></td>
-                                                            <td>{$user->obfs_param}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                                <hr/>
-                                                <p>您好，您目前的 加密方式，混淆或协议 适用于 SS 客户端，请您选用支持 SS 协议的客户端来连接，或者到 <a href="/user/edit">资料编辑</a> 页面修改后再来查看此处。</p>
-                                                <p>同时, Shadowsocks 单端口多用户的连接不受您设置的影响，您可以在此使用相应的客户端进行连接</p>
-                                            {else}
-                                                <p>您的账户连接信息存在异常，请联系管理员</p>
-                                            {/if}
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade active in" id="sub_center">
                                             <nav class="tab-nav margin-top-no">
                                                 <ul class="nav nav-list">
                                                     <li class="active">
-                                                        <a class="" data-toggle="tab" href="#sub_center_general"><i class="icon icon-lg">star</i>&nbsp;General</a>
+                                                        <a class="" data-toggle="tab" href="#sub_center_universal_subscription"><i class="icon icon-lg">star</i>&nbsp;通用订阅</a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="" data-toggle="tab" href="#sub_center_general"><i class="icon icon-lg">error</i>&nbsp;协议/客户端专用订阅（旧）</a>
                                                     </li>
                                                     <li>
                                                         <a class="" data-toggle="tab" href="#sub_center_windows"><i class="icon icon-lg">desktop_windows</i>&nbsp;Windows</a>
@@ -394,8 +376,31 @@ table tr td:first-child {
                                                     </p>
                                                 {/foreach}
                                             {/function}
-                                            <div class="tab-pane fade active in" id="sub_center_general">
+                                            <div class="tab-pane fade active in" id="sub_center_universal_subscription">
                                                 <p>此处为通用订阅，适用于多种应用的订阅，请注意站点所支持的协议，本处显示的订阅类型不代表站点支持的协议类型.</p>
+                                                <hr/>
+                                                <p><span class="icon icon-lg text-white">settings_suggest</span> [ 所有节点 ]：
+                                                    <a class="copy-text btn-dl" data-clipboard-text="{$getUniversalSub}/all"><i class="material-icons icon-sm">send</i> 拷贝链接</a>
+                                                </p>
+                                                <hr/>
+                                                <p><span class="icon icon-lg text-white">settings_suggest</span> [ Shadowsocks 节点 ]：
+                                                    <a class="copy-text btn-dl" data-clipboard-text="{$getUniversalSub}/ss"><i class="material-icons icon-sm">send</i> 拷贝链接</a>
+                                                </p>
+                                                <hr/>
+                                                <p><span class="icon icon-lg text-white">settings_suggest</span> [ Shadowsocksr 节点 ]：
+                                                    <a class="copy-text btn-dl" data-clipboard-text="{$getUniversalSub}/ssr"><i class="material-icons icon-sm">send</i> 拷贝链接</a>
+                                                </p>
+                                                <hr/>
+                                                <p><span class="icon icon-lg text-white">settings_suggest</span> [ Vmess/Vless 节点 ]：
+                                                    <a class="copy-text btn-dl" data-clipboard-text="{$getUniversalSub}/v2ray"><i class="material-icons icon-sm">send</i> 拷贝链接</a>
+                                                </p>
+                                                <hr/>
+                                                <p><span class="icon icon-lg text-white">settings_suggest</span> [ Trojan 节点 ]：
+                                                    <a class="copy-text btn-dl" data-clipboard-text="{$getUniversalSub}/trojan"><i class="material-icons icon-sm">send</i> 拷贝链接</a>
+                                                </p>
+                                            </div>
+                                            <div class="tab-pane fade" id="sub_center_general">
+                                                <p>此处的订阅将会在未来版本中被废弃，请尽快切换至可以使用通用订阅的客戶端</p>
                                                 <hr/>
                                                 <p><span class="icon icon-lg text-white">filter_1</span> [ Shadowsocks ]：
                                                     <a class="copy-text btn-dl" data-clipboard-text="{$subInfo['ss']}"><i class="material-icons icon-sm">send</i> 拷贝订阅链接</a>.<a id="general_ss" class="copy-config btn-dl" onclick=Copyconfig("/user/getUserAllURL?type=ss","#general_ss","")><i class="material-icons icon-sm">send</i> 拷贝全部节点 URL</a>
@@ -571,7 +576,7 @@ table tr td:first-child {
                                             </div>
                                             <div class="tab-pane fade" id="sub_center_ios">
                                             {if $display_ios_class>=0}
-                                                {if $user->class>=$display_ios_class && $user->get_top_up()>=$display_ios_topup}
+                                                {if $user->class>=$display_ios_class && $user->getTopUp()>=$display_ios_topup}
                                                 <div><span class="icon icon-lg text-white">account_box</span> 本站iOS账户：</div>
                                                 <div class="float-clear">
                                                     <input type="text" class="input form-control form-control-monospace cust-link col-xx-12 col-sm-8 col-lg-7" name="input1" readonly value="{$ios_account}" readonly="true">
@@ -676,6 +681,19 @@ table tr td:first-child {
                                                         .
                                                         <a class="btn-dl" onclick=AddSub("{$subInfo['shadowrocket']}","shadowrocket://add/sub://")><i class="material-icons icon-sm">send</i> 一键导入 Shadowrocket</a>
                                                     </p>
+                                                <hr/>
+                                                <p><span class="icon icon-lg text-white">filter_6</span> Stash - [ SS/SSR/VMess/Trojan ]：</p>
+                                                <p>Stash 是一款 iOS 平台基于规则的多协议代理客户端，完全兼容 clash 配置，支持 Rule Set 规则、按需连接、SSID Policy Group等特性.</p>
+                                                <p>
+                                                    应用下载：
+                                                    <a class="btn-dl" href="https://apps.apple.com/app/stash/id1596063349"><i class="material-icons icon-sm">cloud_download</i> 官方下载</a>
+                                                </p>
+                                                <p>
+                                                    使用方式：
+                                                    <a class="btn-dl" href="stash://install-config?url={urlencode($subInfo['clash'])}"><i class="material-icons icon-sm">send</i> 一键导入 Stash</a>
+                                                    .
+                                                    <a class="btn-dl" href="{$subInfo['clash']}"><i class="material-icons icon-sm">send</i> 配置文件下载</a>
+                                                </p>
                                             {if array_key_exists('iOS',$config['userCenterClient'])}
                                                 {if count($config['userCenterClient']['iOS']) != 0}
                                                     {printClient items=$config['userCenterClient']['iOS']}
@@ -845,7 +863,7 @@ table tr td:first-child {
 
 {include file='user/footer.tpl'}
 
-<script src="https://cdn.jsdelivr.net/npm/shake.js@1.2.2/shake.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/shake.js@1.2.2/shake.min.js"></script>
 <script>
     function DateParse(str_date) {
         var str_date_splited = str_date.split(/[^0-9]/);
@@ -927,10 +945,12 @@ table tr td:first-child {
             $.ajax({
                 type: "POST",
                 url: "/user/checkin",
-                dataType: "json",{if $config['enable_checkin_captcha'] == true}
+                dataType: "json",
+                {if $config['enable_checkin_captcha'] == true && $config['captcha_provider'] == 'recaptcha'}
                 data: {
                     recaptcha: grecaptcha.getResponse()
-                },{/if}
+                },
+                {/if}
                 success: (data) => {
                     if (data.ret) {
 
@@ -959,10 +979,12 @@ table tr td:first-child {
             $.ajax({
                 type: "POST",
                 url: "/user/checkin",
-                dataType: "json",{if $config['enable_checkin_captcha'] == true}
+                dataType: "json",
+                {if $config['enable_checkin_captcha'] == true && $config['captcha_provider'] == 'recaptcha'}
                 data: {
                     recaptcha: grecaptcha.getResponse()
-                },{/if}
+                },
+                {/if}
                 success: (data) => {
                     if (data.ret) {
                         $$.getElementById('checkin-msg').innerHTML = data.msg;
@@ -999,6 +1021,7 @@ table tr td:first-child {
             c.show();
         }
     };
+    var checkedmsgGE = '<p><a class="btn btn-brand disabled btn-flat waves-attach" href="#"><span class="icon">check</span>&nbsp;已签到</a></p>';
     var handlerPopup = function (captchaObj) {
         c = captchaObj;
         captchaObj.onSuccess(function () {
@@ -1049,6 +1072,6 @@ table tr td:first-child {
     {/if}
 </script>
 
-{if $config['enable_checkin_captcha'] == true}
+{if $config['enable_checkin_captcha'] == true && $config['captcha_provider'] == 'recaptcha'}
     <script src="https://recaptcha.net/recaptcha/api.js" async defer></script>
 {/if}

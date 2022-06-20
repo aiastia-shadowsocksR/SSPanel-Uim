@@ -1,82 +1,79 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Gateway\CoinPay;
 
-class CoinPayOrderQuery extends CoinPayDataBase
+final class CoinPayOrderQuery extends CoinPayDataBase
 {
     /**
      * 设置票据ID
-     * @param string $value
-     **/
-    public function SetInvoice_id($value)
+     */
+    public function setInvoiceId(string $value): void
     {
         $this->values['invoice_id'] = $value;
     }
     /**
      * 获取票据ID
-     * @return 值
-     **/
-    public function GetInvoice_id()
+     */
+    public function getInvoiceId(): 值
     {
         return $this->values['invoice_id'];
     }
     /**
      * 判断票据ID是否存在
+     *
      * @return true 或 false
-     **/
-    public function IsInvoice_idSet()
+     */
+    public function isInvoiceIdSet(): bool
     {
         return array_key_exists('invoice_id', $this->values);
     }
 
-
     /**
      * 设置商户系统内部的订单号，当没提供transaction_id时需要传这个。
-     * @param string $value
-     **/
-    public function SetOut_trade_no($value)
+     */
+    public function setOutTradeNo(string $value): void
     {
         $this->values['out_trade_no'] = $value;
     }
     /**
      * 获取商户系统内部的订单号，当没提供transaction_id时需要传这个。的值
-     * @return 值
-     **/
-    public function GetOut_trade_no()
+     */
+    public function getOutTradeNo(): 值
     {
         return $this->values['out_trade_no'];
     }
     /**
      * 判断商户系统内部的订单号，当没提供transaction_id时需要传这个。是否存在
+     *
      * @return true 或 false
-     **/
-    public function IsOut_trade_noSet()
+     */
+    public function isOutTradeNoSet(): bool
     {
         return array_key_exists('out_trade_no', $this->values);
     }
 
-
     /**
      * 设置随机字符串，不长于32位。推荐随机数生成算法
-     * @param string $value
-     **/
-    public function SetNonce_str($value)
+     */
+    public function setNonceStr(string $value): void
     {
         $this->values['nonce_str'] = $value;
     }
     /**
      * 获取随机字符串，不长于32位。推荐随机数生成算法的值
-     * @return 值
-     **/
-    public function GetNonce_str()
+     */
+    public function getNonceStr(): 值
     {
         return $this->values['nonce_str'];
     }
     /**
      * 判断随机字符串，不长于32位。推荐随机数生成算法是否存在
+     *
      * @return true 或 false
-     **/
-    public function IsNonce_strSet()
+     */
+    public function isNonceStrSet(): bool
     {
         return array_key_exists('nonce_str', $this->values);
     }

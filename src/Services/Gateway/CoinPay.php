@@ -1,37 +1,54 @@
 <?php
 
+declare(strict_types=1);
 
 namespace App\Services\Gateway;
 
-
 use App\Models\Paylist;
+use App\Models\Setting;
 use App\Services\Auth;
-use App\Services\Config;
 use App\Services\Gateway\CoinPay\CoinPayApi;
 use App\Services\Gateway\CoinPay\CoinPayConfig;
 use App\Services\Gateway\CoinPay\CoinPayException;
 use App\Services\Gateway\CoinPay\CoinPayUnifiedOrder;
+use Psr\Http\Message\ResponseInterface;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-class CoinPay extends AbstractPayment
+final class CoinPay extends AbstractPayment
 {
     private $coinPaySecret;
     private $coinPayGatewayUrl;
     private $coinPayAppId;
 
-
     public function __construct($coinPaySecret, $coinPayAppId)
     {
-        $this->coinPaySecret = $coinPaySecret;
-        $this->coinPayAppId = $coinPayAppId;
-        $this->coinPayGatewayUrl = "https://openapi.coinpay.la/"; // 网关地址
+        $configs = Setting::getClass('coinpay');
+        $this->coinPaySecret = $configs['coinpay_secret'];
+        $this->coinPayAppId = $configs['coinpay_appid'];
+        $this->coinPayGatewayUrl = 'https://openapi.coinpay.la/'; // 网关地址
     }
 
+    public static function _name(): string
+    {
+        return 'coinpay';
+    }
 
-    public function purchase($request, $response, $args)
+    public static function _enable(): bool
+    {
+        return self::getActiveGateway('coinpay');
+    }
+
+    public static function _readableName(): string
+    {
+        return 'CoinPay 支持BTC、ETH、USDT等数十种数字货币';
+    }
+
+    public function purchase(Request $request, Response $response, array $args): ResponseInterface
     {
         // set timezone
         date_default_timezone_set('Asia/Hong_Kong');
-        /**************************请求参数**************************/
+        /*请求参数*/
         $amount = $request->getParam('price');
         //var_dump($request->getParam("price"));die();
         $user = Auth::getUser();
@@ -45,46 +62,32 @@ class CoinPay extends AbstractPayment
         //订单名称，必填
         $subject = $pl->id . 'UID:' . $user->id . ' 充值' . $amount . '元';
         //付款金额，必填
-        $total_fee = (float)$amount;
-        /************************************************************/
+        $total_fee = (float) $amount;
+
         $report_data = new CoinPayUnifiedOrder();
-        $report_data->SetSubject($subject);
-        $report_data->SetOut_trade_no($out_trade_no);
-        $report_data->SetTotal_amount($total_fee);
-        $report_data->SetTimestamp(date('Y-m-d H:i:s', time()));
-        $report_data->SetReturn_url(Config::get('baseUrl') . '/user/code');
-        $report_data->SetNotify_url(Config::get('baseUrl') . '/payment/coinpay/notify');
+        $report_data->setSubject($subject);
+        $report_data->setOutTradeNo($out_trade_no);
+        $report_data->setTotalAmount($total_fee);
+        $report_data->setTimestamp(date('Y-m-d H:i:s', time()));
+        $report_data->setReturnUrl($_ENV['baseUrl'] . '/user/code');
+        $report_data->setNotifyUrl(self::getCallbackUrl());
 //        $report_data->SetBody(json_encode($pl));
 //        $report_data->SetTransCurrency("CNY");
 //        $report_data->SetAttach("");
         $config = new CoinPayConfig();
         try {
             $url = CoinPayApi::unifiedOrder($config, $report_data);
-            return json_encode(['code' => 0, 'url' => $this->coinPayGatewayUrl . 'api/gateway?' . $url]);
+            return $response->withJson(['code' => 0, 'url' => $this->coinPayGatewayUrl . 'api/gateway?' . $url]);
         } catch (CoinPayException $exception) {
             print_r($exception->getMessage());
-            die();
+            die;
         }
     }
 
-    private function Sign($value, $secret)
-    {
-        ksort($value);
-        reset($value);
-        $sign_param = implode('&', $value);
-        $signature = hash_hmac('sha256', $sign_param, $secret, true);
-        return base64_encode($signature);
-    }
-
-    /**
-     * @param $data
-     * @param $sign
-     * @return bool
-     */
-    public function verify($data, $sign)
+    public function verify($data, $sign): bool
     {
         $payConfig = new CoinPayConfig();
-        if ($sign === self::Sign($data, $payConfig->GetSecret())) {
+        if ($sign === self::sign($data, $payConfig->getSecret())) {
             return true;
         }
         return false;
@@ -92,19 +95,18 @@ class CoinPay extends AbstractPayment
 
     /**
      * 异步通知
-     * @param \Slim\Http\Request $request
-     * @param \Slim\Http\Response $response
+     *
      * @param array $args
      */
-    public function notify($request, $response, $args)
+    public function notify($request, $response, $args): ResponseInterface
     {
-        $raw = file_get_contents("php://input");
+        $raw = file_get_contents('php://input');
         file_put_contents(BASE_PATH . '/coinpay_purchase.log', $raw . "\r\n", FILE_APPEND);
         $data = json_decode($raw, true);
-        if (empty($data)) {
+        if (is_null($data)) {
             file_put_contents(BASE_PATH . '/coinpay_purchase.log', "返回数据异常\r\n", FILE_APPEND);
-            echo "fail";
-            die();
+            echo 'fail';
+            die;
         }
         // 签名验证
         $sign = $data['sign'];
@@ -114,45 +116,35 @@ class CoinPay extends AbstractPayment
         if ($resultVerify) {
             if ($isPaid) {
                 $this->postPayment($data['out_trade_no'], 'CoinPay');
-                echo "success";
+                echo 'success';
                 file_put_contents(BASE_PATH . '/coinpay_purchase.log', "订单{$data['out_trade_no']}支付成功\r\n" . json_encode($data) . "\r\n", FILE_APPEND);
             } else {
-                echo "success";
+                echo 'success';
                 file_put_contents(BASE_PATH . '/coinpay_purchase.log', "订单{$data['out_trade_no']}未支付自动关闭成功\r\n" . json_encode($data) . "\r\n", FILE_APPEND);
             }
         } else {
-            echo "fail";
+            echo 'fail';
             file_put_contents(BASE_PATH . '/coinpay_purchase.log', "订单{$data['out_trade_no']}签名验证失败或者订单未支付成功\r\n" . json_encode($data) . "\r\n", FILE_APPEND);
         }
-        die();
+        die;
     }
 
-    public function getReturnHTML($request, $response, $args)
-    {
-        // TODO: Implement getStatus() method.
-    }
-
-    public function getStatus($request, $response, $args)
-    {
-        // TODO: Implement getStatus() method.
-    }
-
-    public function getPurchaseHTML()
+    public static function getPurchaseHTML(): string
     {
         return '<div class="card-inner">
 						<div class="form-group pull-left">
                             <p class="modal-title">CoinPay 支持BTC、ETH、USDT等数十种数字货币</p>
                             <div class="form-group form-group-label">
-                                <label class="floating-label" for="price">充值金额</label>
-                                <input id="type" class="form-control maxwidth-edit" name="amount" />
+                                <label class="floating-label" for="amount-coinpay">充值金额</label>
+                                <input id="amount-coinpay" class="form-control maxwidth-edit" name="amount-coinpay" />
                             </div>
-                             <a class="btn btn-flat waves-attach" id="submitSpay" style="padding: 8px 24px;color: #fff;background: #1890ff;"><span class="icon">check</span>&nbsp;充&nbsp;值&nbsp;</a>
+                             <a class="btn btn-flat waves-attach" id="submitCoinPay" style="padding: 8px 24px;color: #fff;background: #1890ff;"><span class="icon">check</span>&nbsp;充&nbsp;值&nbsp;</a>
                         </div>
                     </div>
                         <script>
                         window.onload = function(){
-        $("#submitSpay").click(function() {
-            var price = parseFloat($("#type").val());
+        $("#submitCoinPay").click(function() {
+            var price = parseFloat($("#amount-coinpay").val());
             if (isNaN(price)) {
                 $("#result").modal();
                 $("#msg").html("非法的金额!");
@@ -161,7 +153,7 @@ class CoinPay extends AbstractPayment
             $(\'#readytopay\').modal();
             $("#readytopay").on(\'shown.bs.modal\', function () {
                 $.ajax({
-                    \'url\': "/user/payment/purchase",
+                    \'url\': "/user/payment/purchase/coinpay",
                     \'data\': {
                         \'price\': price,
                     },
@@ -183,5 +175,14 @@ class CoinPay extends AbstractPayment
         });
     };</script>
 ';
+    }
+
+    private function sign($value, $secret)
+    {
+        ksort($value);
+        reset($value);
+        $sign_param = implode('&', $value);
+        $signature = hash_hmac('sha256', $sign_param, $secret, true);
+        return base64_encode($signature);
     }
 }

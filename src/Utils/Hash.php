@@ -1,11 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Utils;
 
-use App\Services\Config;
-
-
-class Hash
+final class Hash
 {
     public static function passwordHash($pass)
     {
@@ -54,6 +53,6 @@ class Hash
         if (in_array($_ENV['pwdMethod'], ['bcrypt', 'argon2i', 'argon2id'])) {
             return password_verify($password, $hashedPassword);
         }
-        return ($hashedPassword == self::passwordHash($password));
+        return $hashedPassword === self::passwordHash($password);
     }
 }

@@ -12,10 +12,17 @@
     <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="/theme/material/css/user.min.css">
     <!-- jquery -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0"></script>
-    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
     <!-- js -->
     <script src="/assets/js/fuck.min.js"></script>
+    <style>
+    {if $config['user_center_bg'] == true}
+        .page-orange .ui-content-header {
+            background-image: url({$config['user_center_bg_addr']});
+        }
+    {/if}
+    </style>
 </head>
 <body class="page-orange">
 <header class="header header-orange header-transparent header-waterfall ui-header">
@@ -29,35 +36,21 @@
     <ul class="nav nav-list pull-right">
         <div class="dropdown margin-right">
             <a class="dropdown-toggle padding-left-no padding-right-no" data-toggle="dropdown">
-                {if $user->isLogin}
                 <span class="access-hide">{$user->user_name}</span>
                 <span class="avatar avatar-sm"><img src="{$user->gravatar}"></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-right">
                 <li>
-                    <a class="waves-attach" href="/user/"><span class="icon icon-lg margin-right">account_box</span>用户中心</a>
+                    <a class="waves-attach" href="/user/edit">
+                        <span class="icon icon-lg margin-right">edit</span>资料编辑
+                    </a>
                 </li>
                 <li>
-                    <a class="padding-right-cd waves-attach" href="/user/logout"><span
-                                class="icon icon-lg margin-right">exit_to_app</span>登出</a>
-                </li>
-                <li>
-                    <a href="//en.gravatar.com/" target="view_window"><i class="icon icon-lg margin-right">insert_photo</i>设置头像</a>
+                    <a class="padding-right-cd waves-attach" href="/user/logout">
+                        <span class="icon icon-lg margin-right">exit_to_app</span>登出
+                    </a>
                 </li>
             </ul>
-            {else}
-            <span class="access-hide">未登录</span>
-            <span class="icon icon-lg margin-right">account_circle</span>
-            <ul class="dropdown-menu dropdown-menu-right">
-                <li>
-                    <a class="padding-right-lg waves-attach" href="/auth/login"><span class="icon icon-lg margin-right">account_box</span>登录</a>
-                </li>
-                <li>
-                    <a class="padding-right-lg waves-attach" href="/auth/register"><span
-                                class="icon icon-lg margin-right">pregnant_woman</span>注册</a>
-                </li>
-            </ul>
-            {/if}
         </div>
     </ul>
 </header>
@@ -74,9 +67,6 @@
                         </li>
                         <li>
                             <a href="/user/profile"><i class="icon icon-lg">account_box</i>&nbsp;账户信息</a>
-                        </li>
-                        <li>
-                            <a href="/user/edit"><i class="icon icon-lg">sync_problem</i>&nbsp;资料编辑</a>
                         </li>
                         {if $config['subscribeLog']===true && $config['subscribeLog_show']===true}
                         <li>
@@ -98,11 +88,11 @@
                             <a href="/user/node"><i class="icon icon-lg">airplanemode_active</i>&nbsp;节点列表</a>
                         </li>
                         <li>
-                            <a href="/user/announcement"><i class="icon icon-lg">announcement</i>&nbsp;网站公告</a>
+                            <a href="/user/media"><i class="icon icon-lg">ondemand_video</i>&nbsp;流媒体解锁</a>
                         </li>
-                    </ul>
-                    <a class="waves-attach" data-toggle="collapse" href="#ui_menu_detect">审计</a>
-                    <ul class="menu-collapse collapse in" id="ui_menu_detect">
+                        <li>
+                            <a href="/user/announcement"><i class="icon icon-lg">announcement</i>&nbsp;站点公告</a>
+                        </li>
                         <li>
                             <a href="/user/detect"><i class="icon icon-lg">account_balance</i>&nbsp;审计规则</a>
                         </li>
@@ -138,8 +128,5 @@
         </div>
     </div>
 </nav>
-{if $config['live_chat'] === 'mylivechat'}
-    {include file='mylivechat.tpl'}
-{elseif $config['live_chat'] === 'crisp'}
-    {include file='crisp.tpl'}
-{/if}
+
+{include file='live_chat.tpl'}
