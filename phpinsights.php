@@ -33,7 +33,6 @@ return [
         PHP_CodeSniffer\Standards\PSR1\Sniffs\Methods\CamelCapsMethodNameSniff::class => [
             'exclude' => [
                 'src/Command/Job.php',
-                'src/Command/PortAutoChange.php',
             ],
         ],
         // Db migration should not have a class declaration
@@ -45,13 +44,6 @@ return [
 
     'exclude' => [
         'storage',
-
-        // TODO: mute legacy contents error
-        'src/Services/Gateway/CoinPay/CoinPayDataBase.php',
-        'src/Services/Gateway/Epay',
-        'src/Services/Mail.php',
-        'src/Services/Password.php',
-        'src/Utils/GA.php',
         'src/Utils/GeetestLib.php',
     ],
 ];

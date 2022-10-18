@@ -19,7 +19,7 @@ final class URL
     public static function canMethodConnect($method)
     {
         $ss_aead_method_list = Config::getSupportParam('ss_aead_method');
-        if (in_array($method, $ss_aead_method_list)) {
+        if (\in_array($method, $ss_aead_method_list)) {
             return 2;
         }
         return 3;
@@ -54,7 +54,7 @@ final class URL
         if ($obfs !== 'plain') {
             //SS obfs only
             $ss_obfs = Config::getSupportParam('ss_obfs');
-            if (in_array($obfs, $ss_obfs)) {
+            if (\in_array($obfs, $ss_obfs)) {
                 if (strpos($obfs, '_compatible') === false) {
                     return 2;
                 }
@@ -72,13 +72,31 @@ final class URL
         return 3;
     }
 
+    /**
+     * parse xxx=xxx|xxx=xxx to array(xxx => xxx, xxx => xxx)
+     */
+    public static function parseArgs(string $origin): array
+    {
+        // parse xxx=xxx|xxx=xxx to array(xxx => xxx, xxx => xxx)
+        $args_explode = explode('|', $origin);
+
+        $return_array = [];
+        foreach ($args_explode as $arg) {
+            $split_point = strpos($arg, '=');
+
+            $return_array[substr($arg, 0, $split_point)] = substr($arg, $split_point + 1);
+        }
+
+        return $return_array;
+    }
+
     public static function SSCanConnect(User $user, $mu_port = 0): bool
     {
         if ($mu_port !== 0) {
             $mu_user = User::where('port', '=', $mu_port)
                 ->where('is_multi_user', '<>', 0)->first();
             if ($mu_user === null) {
-                return 0;
+                return false;
             }
             return self::SSCanConnect($mu_user);
         }
@@ -142,7 +160,7 @@ final class URL
         array $rules = []
     ): \Illuminate\Database\Eloquent\Collection {
         $query = Node::query();
-        if (is_array($sort)) {
+        if (\is_array($sort)) {
             $query->whereIn('sort', $sort);
         } else {
             $query->where('sort', $sort);
@@ -170,7 +188,6 @@ final class URL
      * ```
      * $Rule = [
      *      'type'    => 'all | ss | ssr | vmess | trojan',
-     *      'emoji'   => false,
      *      'is_mu'   => 1,
      *      'content' => [
      *          'noclass' => [0, 1, 2],
@@ -187,7 +204,6 @@ final class URL
     {
         $is_ss = [0];
         $is_mu = ($Rule['is_mu'] ?? (int) $_ENV['mergeSub']);
-        $emoji = ($Rule['emoji'] ?? false);
 
         switch ($Rule['type']) {
             case 'ss':
@@ -215,7 +231,7 @@ final class URL
 
         // 单端口 sort = 9
         $mu_nodes = [];
-        if ($is_mu !== 0 && in_array($Rule['type'], ['all', 'ss', 'ssr'])) {
+        if ($is_mu !== 0 && \in_array($Rule['type'], ['all', 'ss', 'ssr'])) {
             $mu_node_query = Node::query();
             $mu_node_query->where('sort', 9)->where('type', '1');
             if ($is_mu !== 1) {
@@ -251,14 +267,14 @@ final class URL
             // 筛选 End
 
             // 其他类型单端口节点
-            if (in_array($node->sort, [11, 13, 14])) {
+            if (\in_array($node->sort, [11, 13, 14])) {
                 $node_class = [
                     11 => 'getV2RayItem',           // V2Ray
                     13 => 'getV2RayPluginItem',     // Rico SS (V2RayPlugin && obfs)
                     14 => 'getTrojanItem',          // Trojan
                 ];
                 $class = $node_class[$node->sort];
-                $item = $node->$class($user, 0, 0, $emoji);
+                $item = $node->$class($user, 0, 0);
                 if ($item !== null) {
                     $return_array[] = $item;
                 }
@@ -267,12 +283,12 @@ final class URL
             // 其他类型单端口节点 End
 
             // SS 节点
-            if (in_array($node->sort, [0])) {
+            if (\in_array($node->sort, [0])) {
                 // 节点非只启用单端口 && 只获取普通端口
                 if ($node->mu_only !== 1 &&
                     ($is_mu === 0 || ($is_mu !== 0 && $_ENV['mergeSub'] === true))) {
                     foreach ($is_ss as $ss) {
-                        $item = $node->getItem($user, 0, $ss, $emoji);
+                        $item = $node->getItem($user, 0, $ss);
                         if ($item !== null) {
                             $return_array[] = $item;
                         }
@@ -284,7 +300,7 @@ final class URL
                 if ($node->mu_only !== -1 && $is_mu !== 0) {
                     foreach ($is_ss as $ss) {
                         foreach ($mu_nodes as $mu_node) {
-                            $item = $node->getItem($user, $mu_node->server, $ss, $emoji);
+                            $item = $node->getItem($user, $mu_node->server, $ss);
                             if ($item !== null) {
                                 $return_array[] = $item;
                             }
@@ -305,7 +321,6 @@ final class URL
      * ```
      *  $Rule = [
      *      'type'    => 'ss | ssr | vmess',
-     *      'emoji'   => false,
      *      'is_mu'   => 1,
      *      'content' => [
      *          'noclass' => [0, 1, 2],
@@ -321,7 +336,7 @@ final class URL
     public static function getNewAllUrl(User $user, array $Rule): string
     {
         $return_url = '';
-        if (strtotime($user->expire_in) < time()) {
+        if (strtotime($user->expire_in) < \time()) {
             return $return_url;
         }
         $items = URL::getNewAllItems($user, $Rule);
@@ -350,7 +365,7 @@ final class URL
      *
      * @return array
      */
-    public static function getAllSSItems(User $user, bool $emoji = false): array
+    public static function getAllSSItems(User $user): array
     {
         return self::getNodes($user, [0, 10]);
     }
@@ -362,12 +377,12 @@ final class URL
      *
      * @return array
      */
-    public static function getAllV2RayPluginItems(User $user, bool $emoji = false): array
+    public static function getAllV2RayPluginItems(User $user): array
     {
         $return_array = [];
         $nodes = self::getNodes($user, 13);
         foreach ($nodes as $node) {
-            $item = $node->getV2RayPluginItem($user, 0, 0, $emoji);
+            $item = $node->getV2RayPluginItem($user, 0, 0);
             if ($item !== null) {
                 $return_array[] = $item;
             }
@@ -384,19 +399,18 @@ final class URL
     public static function getV2Url(
         User $user,
         Node $node,
-        bool $arrout = false,
-        bool $emoji = false
+        bool $arrout = false
     ) {
-        $item = Tools::v2Array($node->server);
+        $item = Tools::v2Array($node);
         $item['v'] = '2';
         $item['type'] = 'vmess';
-        $item['ps'] = ($emoji ? Tools::addEmoji($node->name) : $node->name);
+        $item['ps'] = $node->name;
         $item['remark'] = $item['ps'];
         $item['id'] = $user->uuid;
         $item['class'] = $node->node_class;
         if (! $arrout) {
             return 'vmess://' . base64_encode(
-                json_encode($item, 320)
+                \json_encode($item, 320)
             );
         }
         return $item;
@@ -407,8 +421,7 @@ final class URL
      */
     public static function getAllVMessUrl(
         User $user,
-        bool $arrout = false,
-        bool $emoji = false
+        bool $arrout = false
     ) {
         $nodes = self::getNodes($user, [11]);
         # 增加中转配置，后台目前配置user=0的话是自由门直接中转
@@ -420,12 +433,12 @@ final class URL
         if (! $arrout) {
             $result = '';
             foreach ($nodes as $node) {
-                $result .= self::getV2Url($user, $node, $arrout, $emoji) . PHP_EOL;
+                $result .= self::getV2Url($user, $node, $arrout) . PHP_EOL;
             }
         } else {
             $result = [];
             foreach ($nodes as $node) {
-                $result[] = self::getV2Url($user, $node, $arrout, $emoji);
+                $result[] = self::getV2Url($user, $node, $arrout);
             }
         }
         return $result;
@@ -436,12 +449,12 @@ final class URL
      *
      * @param User $user 用户
      */
-    public static function getAllTrojan(User $user, bool $emoji = false): array
+    public static function getAllTrojan(User $user): array
     {
         $return_array = [];
         $nodes = self::getNodes($user, 14);
         foreach ($nodes as $node) {
-            $item = $node->getTrojanItem($user, 0, 0, $emoji);
+            $item = $node->getTrojanItem($user, 0, 0);
             if ($item !== null) {
                 $return_array[] = $item;
             }
@@ -470,7 +483,7 @@ final class URL
     {
         $ss_obfs_list = Config::getSupportParam('ss_obfs');
         $plugin = '';
-        if (in_array($item['obfs'], $ss_obfs_list)) {
+        if (\in_array($item['obfs'], $ss_obfs_list)) {
             if (strpos($item['obfs'], 'http') !== false) {
                 $plugin .= 'obfs-local --obfs http';
             } else {
@@ -487,7 +500,7 @@ final class URL
     {
         $ss_obfs_list = Config::getSupportParam('ss_obfs');
         $plugin = '';
-        if (in_array($item['obfs'], $ss_obfs_list)) {
+        if (\in_array($item['obfs'], $ss_obfs_list)) {
             if (strpos($item['obfs'], 'http') !== false) {
                 $plugin .= ', obfs=http';
             } else {

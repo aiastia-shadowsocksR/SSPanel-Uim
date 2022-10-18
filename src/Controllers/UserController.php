@@ -25,7 +25,6 @@ use App\Services\Captcha;
 use App\Services\Config;
 use App\Services\Payment;
 use App\Utils\Check;
-use App\Utils\ClientProfiles;
 use App\Utils\Cookie;
 use App\Utils\DatatablesHelper;
 use App\Utils\GA;
@@ -64,8 +63,8 @@ final class UserController extends BaseController
                 }
             }
             $getClient->user_id = $this->user->id;
-            $getClient->create_time = time();
-            $getClient->expire_time = time() + 10 * 60;
+            $getClient->create_time = \time();
+            $getClient->expire_time = \time() + 10 * 60;
             $getClient->save();
         } else {
             $token = '';
@@ -93,9 +92,9 @@ final class UserController extends BaseController
                 ->assign('ann', Ann::orderBy('date', 'desc')->first())
                 ->assign('geetest_html', $geetest_html)
                 ->assign('mergeSub', $_ENV['mergeSub'])
-                ->assign('subUrl', $_ENV['subUrl'])
+                ->assign('subUrl', $_ENV['subUrl'] . '/link/')
                 ->registerClass('URL', URL::class)
-                ->assign('recaptcha_sitekey', $captcha['recaptcha'])
+                ->assign('turnstile_sitekey', $captcha['turnstile'])
                 ->assign('subInfo', LinkController::getSubinfo($this->user, 0))
                 ->assign('getUniversalSub', SubController::getUniversalSub($this->user))
                 ->assign('getClient', $token)
@@ -152,32 +151,6 @@ final class UserController extends BaseController
                 ->assign('render', $render)
                 ->display('user/donate.tpl')
         );
-    }
-
-    public function isHTTPS()
-    {
-        define('HTTPS', false);
-        if (defined('HTTPS') && HTTPS) {
-            return true;
-        }
-        if (! isset($_SERVER)) {
-            return false;
-        }
-        if (! isset($_SERVER['HTTPS'])) {
-            return false;
-        }
-        if ($_SERVER['HTTPS'] === 1) {  //Apache
-            return true;
-        }
-
-        if ($_SERVER['HTTPS'] === 'on') { //IIS
-            return true;
-        }
-
-        if ($_SERVER['SERVER_PORT'] === 443) { //其他
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -250,8 +223,8 @@ final class UserController extends BaseController
         }
 
         if ($codeq->type === 10002) {
-            if (time() > strtotime($user->expire_in)) {
-                $user->expire_in = date('Y-m-d H:i:s', time() + $codeq->number * 86400);
+            if (\time() > strtotime($user->expire_in)) {
+                $user->expire_in = date('Y-m-d H:i:s', \time() + $codeq->number * 86400);
             } else {
                 $user->expire_in = date('Y-m-d H:i:s', strtotime($user->expire_in) + $codeq->number * 86400);
             }
@@ -260,7 +233,7 @@ final class UserController extends BaseController
 
         if ($codeq->type >= 1 && $codeq->type <= 10000) {
             if ($user->class === 0 || $user->class !== $codeq->type) {
-                $user->class_expire = date('Y-m-d H:i:s', time());
+                $user->class_expire = date('Y-m-d H:i:s', \time());
                 $user->save();
             }
             $user->class_expire = date('Y-m-d H:i:s', strtotime($user->class_expire) + $codeq->number * 86400);
@@ -277,7 +250,7 @@ final class UserController extends BaseController
     /**
      * @param array     $args
      */
-    public function gaCheck(Request $request, Response $response, array $args)
+    public function checkGa(Request $request, Response $response, array $args)
     {
         $code = $request->getParam('code');
         if ($code === '') {
@@ -304,7 +277,7 @@ final class UserController extends BaseController
     /**
      * @param array     $args
      */
-    public function gaSet(Request $request, Response $response, array $args)
+    public function setGa(Request $request, Response $response, array $args)
     {
         $enable = $request->getParam('enable');
         if ($enable === '') {
@@ -349,7 +322,7 @@ final class UserController extends BaseController
     /**
      * @param array     $args
      */
-    public function gaReset(Request $request, Response $response, array $args)
+    public function resetGa(Request $request, Response $response, array $args)
     {
         $ga = new GA();
         $secret = $ga->createSecret();
@@ -375,7 +348,7 @@ final class UserController extends BaseController
         // 使用IP
         $userip = [];
         $iplocation = new QQWry();
-        $total = Ip::where('datetime', '>=', time() - 300)->where('userid', '=', $this->user->id)->get();
+        $total = Ip::where('datetime', '>=', \time() - 300)->where('userid', '=', $this->user->id)->get();
         foreach ($total as $single) {
             $single->ip = Tools::getRealIp($single->ip);
             $is_node = Node::where('node_ip', $single->ip)->first();
@@ -445,11 +418,11 @@ final class UserController extends BaseController
 
             $unlock = StreamMedia::where('node_id', $node_id)
                 ->orderBy('id', 'desc')
-                ->where('created_at', '>', time() - 86460) // 只获取最近一天零一分钟内上报的数据
+                ->where('created_at', '>', \time() - 86460) // 只获取最近一天零一分钟内上报的数据
                 ->first();
 
             if ($unlock !== null && $node !== null) {
-                $details = json_decode($unlock->result, true);
+                $details = \json_decode($unlock->result, true);
                 $details = str_replace('Originals Only', '仅限自制', $details);
                 $details = str_replace('Oversea Only', '仅限海外', $details);
 
@@ -470,11 +443,11 @@ final class UserController extends BaseController
                 $key_node = Node::where('id', $key)->first();
                 $value_node = StreamMedia::where('node_id', $value)
                     ->orderBy('id', 'desc')
-                    ->where('created_at', '>', time() - 86460) // 只获取最近一天零一分钟内上报的数据
+                    ->where('created_at', '>', \time() - 86460) // 只获取最近一天零一分钟内上报的数据
                     ->first();
 
                 if ($value_node !== null) {
-                    $details = json_decode($value_node->result, true);
+                    $details = \json_decode($value_node->result, true);
                     $details = str_replace('Originals Only', '仅限自制', $details);
                     $details = str_replace('Oversea Only', '仅限海外', $details);
 
@@ -566,7 +539,7 @@ final class UserController extends BaseController
      */
     public function buyInvite(Request $request, Response $response, array $args)
     {
-        $price = $_ENV['invite_price'];
+        $price = Setting::obtain('invite_price');
         $num = $request->getParam('num');
         $num = trim($num);
 
@@ -597,14 +570,14 @@ final class UserController extends BaseController
      */
     public function customInvite(Request $request, Response $response, array $args)
     {
-        $price = $_ENV['custom_invite_price'];
+        $price = Setting::obtain('custom_invite_price');
         $customcode = $request->getParam('customcode');
         $customcode = trim($customcode);
 
-        if (! Tools::isValidate($customcode) || $price < 0 || $customcode === '' || strlen($customcode) > 32) {
+        if (Tools::isSpecialChars($customcode) || $price < 0 || $customcode === '' || strlen($customcode) > 32) {
             return ResponseHelper::error(
                 $response,
-                '非法请求,邀请链接后缀不能包含特殊符号且长度不能大于32字符'
+                '定制失败，邀请链接不能为空，后缀不能包含特殊符号且长度不能大于32字符'
             );
         }
 
@@ -686,7 +659,7 @@ final class UserController extends BaseController
 
         if (Setting::obtain('reg_email_verify')) {
             $emailcode = $request->getParam('emailcode');
-            $mailcount = EmailVerify::where('email', '=', $newemail)->where('code', '=', $emailcode)->where('expire_in', '>', time())->first();
+            $mailcount = EmailVerify::where('email', '=', $newemail)->where('code', '=', $emailcode)->where('expire_in', '>', \time())->first();
             if ($mailcount === null) {
                 return ResponseHelper::error($response, '您的邮箱验证码不正确');
             }
@@ -757,7 +730,7 @@ final class UserController extends BaseController
         $UIP = new UnblockIp();
         $UIP->userid = $user->id;
         $UIP->ip = $_SERVER['REMOTE_ADDR'];
-        $UIP->datetime = time();
+        $UIP->datetime = \time();
         $UIP->save();
 
         return ResponseHelper::successfully($response, $_SERVER['REMOTE_ADDR']);
@@ -813,33 +786,32 @@ final class UserController extends BaseController
     /**
      * @param array     $args
      */
-    public function updateWechat(Request $request, Response $response, array $args)
+    public function updateContact(Request $request, Response $response, array $args)
     {
         $type = $request->getParam('imtype');
-        $wechat = $request->getParam('wechat');
-        $wechat = trim($wechat);
+        $contact = trim($request->getParam('contact'));
 
         $user = $this->user;
 
-        if ($user->telegram_id !== 0) {
+        if ($user->telegram_id !== null) {
             return ResponseHelper::error(
                 $response,
                 '您绑定了 Telegram ，所以此项并不能被修改。'
             );
         }
 
-        if ($wechat === '' || $type === '') {
+        if ($contact === '' || $type === '') {
             return ResponseHelper::error($response, '非法输入');
         }
 
-        $user1 = User::where('im_value', $wechat)->where('im_type', $type)->first();
+        $user1 = User::where('im_value', $contact)->where('im_type', $type)->first();
         if ($user1 !== null) {
             return ResponseHelper::error($response, '此联络方式已经被注册');
         }
 
         $user->im_type = $type;
         $antiXss = new AntiXSS();
-        $user->im_value = $antiXss->xss_clean($wechat);
+        $user->im_value = $antiXss->xss_clean($contact);
         $user->save();
 
         return ResponseHelper::successfully($response, '修改成功');
@@ -923,7 +895,8 @@ final class UserController extends BaseController
             return ResponseHelper::error($response, '非法输入');
         }
 
-        $user->theme = filter_var($theme, FILTER_SANITIZE_STRING);
+        $antiXss = new AntiXSS();
+        $user->theme = $antiXss->xss_clean($theme);
         $user->save();
 
         return ResponseHelper::successfully($response, '设置成功');
@@ -935,7 +908,7 @@ final class UserController extends BaseController
     public function updateMail(Request $request, Response $response, array $args)
     {
         $value = (int) $request->getParam('mail');
-        if (in_array($value, [0, 1, 2])) {
+        if (\in_array($value, [0, 1, 2])) {
             $user = $this->user;
             if ($value === 2 && $_ENV['enable_telegram'] === false) {
                 return ResponseHelper::error(
@@ -953,27 +926,22 @@ final class UserController extends BaseController
     /**
      * @param array     $args
      */
-    public function updateSsPwd(Request $request, Response $response, array $args)
+    public function resetPasswd(Request $request, Response $response, array $args)
     {
         $user = $this->user;
         $pwd = Tools::genRandomChar(16);
-        $current_timestamp = time();
+        $current_timestamp = \time();
         $new_uuid = Uuid::uuid3(Uuid::NAMESPACE_DNS, $user->email . '|' . $current_timestamp);
-        $otheruuid = User::where('uuid', $new_uuid)->first();
+        $existing_uuid = User::where('uuid', $new_uuid)->first();
 
-        if ($pwd === '') {
-            return ResponseHelper::error($response, '密码不能为空');
-        }
-        if (! Tools::isValidate($pwd)) {
-            return ResponseHelper::error($response, '密码无效');
-        }
-        if ($otheruuid !== null) {
+        if ($existing_uuid !== null) {
             return ResponseHelper::error($response, '目前出现一些问题，请稍后再试');
         }
 
         $user->uuid = $new_uuid;
+        $user->passwd = $pwd;
         $user->save();
-        $user->updateSsPwd($pwd);
+
         return ResponseHelper::successfully($response, '修改成功');
     }
 
@@ -1014,7 +982,7 @@ final class UserController extends BaseController
             }
         }
 
-        if (strtotime($this->user->expire_in) < time()) {
+        if (strtotime($this->user->expire_in) < \time()) {
             return ResponseHelper::error($response, '没有过期的账户才可以签到');
         }
 
@@ -1075,11 +1043,12 @@ final class UserController extends BaseController
     /**
      * @param array     $args
      */
-    public function telegramReset(Request $request, Response $response, array $args)
+    public function resetTelegram(Request $request, Response $response, array $args)
     {
         $user = $this->user;
         $user->telegramReset();
-        return $response->withStatus(302)->withHeader('Location', '/user/edit');
+
+        return ResponseHelper::successfully($response, '重置成功');
     }
 
     /**
@@ -1089,7 +1058,8 @@ final class UserController extends BaseController
     {
         $user = $this->user;
         $user->cleanLink();
-        return $response->withStatus(302)->withHeader('Location', '/user');
+
+        return ResponseHelper::successfully($response, '重置成功');
     }
 
     /**
@@ -1126,7 +1096,7 @@ final class UserController extends BaseController
                 'old_ip' => null,
                 'old_expire_in' => null,
                 'old_local' => null,
-            ], time() - 1000);
+            ], \time() - 1000);
         }
         $expire_in = Cookie::get('old_expire_in');
         $local = Cookie::get('old_local');
@@ -1198,74 +1168,21 @@ final class UserController extends BaseController
     }
 
     /**
-     * 获取包含订阅信息的客户端压缩档，PHP 需安装 zip 扩展
-     *
-     * @param array    $args
+     * @param array     $args
      */
-    public function getPcClient(Request $request, Response $response, array $args)
+    public function switchThemeMode(Request $request, Response $response, array $args)
     {
-        $zipArc = new \ZipArchive();
-        $user_token = LinkController::generateSSRSubCode($this->user->id);
-        $type = trim($request->getQueryParams()['type']);
-        // 临时文件存放路径
-        $temp_file_path = BASE_PATH . '/storage/';
-        // 客户端文件存放路径
-        $client_path = BASE_PATH . '/resources/clients/';
-        switch ($type) {
-            case 'ss-win':
-                $user_config_file_name = 'gui-config.json';
-                $content = ClientProfiles::getSSPcConf($this->user);
-                break;
-            case 'ssr-win':
-                $user_config_file_name = 'gui-config.json';
-                $content = ClientProfiles::getSSRPcConf($this->user);
-                break;
-            case 'v2rayn-win':
-                $user_config_file_name = 'guiNConfig.json';
-                $content = ClientProfiles::getV2RayNPcConf($this->user);
-                break;
-            default:
-                return 'gg';
+        $user = $this->user;
+        if ($user->is_dark_mode === 1) {
+            $user->is_dark_mode = 0;
+        } else {
+            $user->is_dark_mode = 1;
         }
-        $temp_file_path .= $type . '_' . $user_token . '.zip';
-        $client_path .= $type . '/';
-        // 文件存在则先删除
-        if (is_file($temp_file_path)) {
-            unlink($temp_file_path);
-        }
-        // 超链接文件内容
-        $site_url_content = '[InternetShortcut]' . PHP_EOL . 'URL=' . $_ENV['baseUrl'];
-        // 创建 zip 并添加内容
-        $zipArc->open($temp_file_path, \ZipArchive::CREATE);
-        $zipArc->addFromString($user_config_file_name, $content);
-        $zipArc->addFromString('点击访问_' . $_ENV['appName'] . '.url', $site_url_content);
-        Tools::folderToZip($client_path, $zipArc, strlen($client_path));
-        $zipArc->close();
+        $user->save();
 
-        $newResponse = $response->withHeader('Content-type', ' application/octet-stream')->withHeader('Content-Disposition', ' attachment; filename=' . $type . '.zip');
-        $newResponse->write(file_get_contents($temp_file_path));
-        unlink($temp_file_path);
-
-        return $newResponse;
-    }
-
-    /**
-     * 从使用同数据库的其他面板下载客户端[内置节点]
-     *
-     * @param array    $args
-     */
-    public function getClientfromToken(Request $request, Response $response, array $args)
-    {
-        $token = $args['token'];
-        $Etoken = Token::where('token', '=', $token)->where('create_time', '>', time() - 60 * 10)->first();
-        if ($Etoken === null) {
-            return '下载链接已失效，请刷新页面后重新点击.';
-        }
-        $user = User::find($Etoken->user_id);
-        if ($user === null) {
-            return null;
-        }
-        $this->user = $user;
-        return $this->getPcClient($request, $response, $args);
+        return $response->withJson([
+            'ret' => 1,
+            'msg' => '切換成功',
+        ]);
     }
 }

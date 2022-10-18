@@ -12,20 +12,20 @@ final class Captcha
     public static function generate(): array
     {
         $geetest = null;
-        $recaptcha = null;
+        $turnstile = null;
 
         switch (Setting::obtain('captcha_provider')) {
-            case 'recaptcha':
-                $recaptcha = Setting::obtain('recaptcha_sitekey');
+            case 'turnstile':
+                $turnstile = Setting::obtain('turnstile_sitekey');
                 break;
             case 'geetest':
-                $geetest = Geetest::get(time() . random_int(1, 10000));
+                $geetest = Geetest::get(\time() . random_int(1, 10000));
                 break;
         }
 
         return [
             'geetest' => $geetest,
-            'recaptcha' => $recaptcha,
+            'turnstile' => $turnstile,
         ];
     }
 
@@ -37,11 +37,25 @@ final class Captcha
         $result = false;
 
         switch (Setting::obtain('captcha_provider')) {
-            case 'recaptcha':
-                if (isset($param['recaptcha'])) {
-                    if ($param['recaptcha'] !== '') {
-                        $json = file_get_contents('https://recaptcha.net/recaptcha/api/siteverify?secret=' . Setting::obtain('recaptcha_secret') . '&response=' . $param['recaptcha']);
-                        $result = json_decode($json)->success;
+            case 'turnstile':
+                if (isset($param['turnstile'])) {
+                    if ($param['turnstile'] !== '') {
+                        $postdata = http_build_query(
+                            [
+                                'secret' => Setting::obtain('turnstile_secret'),
+                                'response' => $param['turnstile'],
+                            ]
+                        );
+
+                        $opts = ['http' => [
+                            'method' => 'POST',
+                            'header' => 'Content-Type: application/x-www-form-urlencoded',
+                            'content' => $postdata,
+                        ],
+                        ];
+
+                        $json = file_get_contents('https://challenges.cloudflare.com/turnstile/v0/siteverify', false, stream_context_create($opts));
+                        $result = \json_decode($json)->success;
                     }
                 }
                 break;

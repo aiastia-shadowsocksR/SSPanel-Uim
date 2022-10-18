@@ -81,6 +81,226 @@
     },
     {
         "id": null,
+        "item": "payjs_url",
+        "value": "",
+        "class": "payjs",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "payjs_url"
+    },
+    {
+        "id": null,
+        "item": "payjs_mchid",
+        "value": "",
+        "class": "payjs",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "payjs_mchid"
+    },
+    {
+        "id": null,
+        "item": "payjs_key",
+        "value": "",
+        "class": "payjs",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "payjs_key"
+    },
+    {
+        "id": null,
+        "item": "theadpay_url",
+        "value": "",
+        "class": "theadpay",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "theadpay_url"
+    },
+    {
+        "id": null,
+        "item": "theadpay_mchid",
+        "value": "",
+        "class": "theadpay",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "theadpay_mchid"
+    },
+    {
+        "id": null,
+        "item": "theadpay_key",
+        "value": "",
+        "class": "theadpay",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "theadpay_key"
+    },
+    {
+        "id": null,
+        "item": "stripe_currency",
+        "value": "HKD",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "string",
+        "default": "HKD",
+        "mark": "货币代码"
+    },
+    {
+        "id": null,
+        "item": "stripe_sk",
+        "value": "stripe_sk",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "string",
+        "default": "stripe_sk",
+        "mark": "stripe_sk"
+    },
+    {
+        "id": null,
+        "item": "stripe_pk",
+        "value": "stripe_pk",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "string",
+        "default": "stripe_pk",
+        "mark": "stripe_pk"
+    },
+    {
+        "id": null,
+        "item": "stripe_webhook_key",
+        "value": "stripe_webhook_key",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "string",
+        "default": "stripe_webhook_key",
+        "mark": "web_hook密钥"
+    },
+    {
+        "id": null,
+        "item": "stripe_min_recharge",
+        "value": "10",
+        "class": "stripe",
+        "is_public": 1,
+        "type": "int",
+        "default": "10",
+        "mark": "最低充值限额"
+    },
+    {
+        "id": null,
+        "item": "stripe_card",
+        "value": "0",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "bool",
+        "default": "0",
+        "mark": "银行卡支付"
+    },
+    {
+        "id": null,
+        "item": "stripe_alipay",
+        "value": "0",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "bool",
+        "default": "0",
+        "mark": "支付宝支付"
+    },
+    {
+        "id": null,
+        "item": "stripe_wechat",
+        "value": "0",
+        "class": "stripe",
+        "is_public": 0,
+        "type": "bool",
+        "default": "0",
+        "mark": "微信支付"
+    },
+    {
+        "id": null,
+        "item": "stripe_max_recharge",
+        "value": "1000",
+        "class": "stripe",
+        "is_public": 1,
+        "type": "int",
+        "default": "1000",
+        "mark": "最高充值限额"
+    },
+    {
+        "id": null,
+        "item": "epay_url",
+        "value": "1000",
+        "class": "epay",
+        "is_public": 0,
+        "type": "string",
+        "default": "1000",
+        "mark": "易支付url"
+    },
+	{
+        "id": null,
+        "item": "epay_pid",
+        "value": "1000",
+        "class": "epay",
+        "is_public": 0,
+        "type": "string",
+        "default": "1000",
+        "mark": "易支付商户ID"
+    },
+	{
+        "id": null,
+        "item": "epay_key",
+        "value": "1000",
+        "class": "epay",
+        "is_public": 0,
+        "type": "string",
+        "default": "1000",
+        "mark": "易支付商户Key"
+    },
+    {
+        "id": null,
+        "item": "epay_alipay",
+        "value": "1",
+        "class": "epay",
+        "is_public": 1,
+        "type": "bool",
+        "default": "1",
+        "mark": "启用支付宝"
+    },
+    {
+        "id": null,
+        "item": "epay_wechat",
+        "value": "0",
+        "class": "epay",
+        "is_public": 1,
+        "type": "bool",
+        "default": "0",
+        "mark": "启用微信支付"
+    },
+    {
+        "id": null,
+        "item": "epay_qq",
+        "value": "0",
+        "class": "epay",
+        "is_public": 1,
+        "type": "bool",
+        "default": "0",
+        "mark": "启用QQ钱包"
+    },
+    {
+        "id": null,
+        "item": "epay_usdt",
+        "value": "0",
+        "class": "epay",
+        "is_public": 1,
+        "type": "bool",
+        "default": "0",
+        "mark": "启用USDT"
+    },
+    {
+        "id": null,
         "item": "smtp_host",
         "value": "",
         "class": "smtp",
@@ -172,11 +392,11 @@
     {
         "id": null,
         "item": "captcha_provider",
-        "value": "recaptcha",
+        "value": "turnstile",
         "class": "captcha",
         "is_public": 1,
         "type": "string",
-        "default": "recaptcha",
+        "default": "turnstile",
         "mark": "验证码提供商"
     },
     {
@@ -211,23 +431,23 @@
     },
     {
         "id": null,
-        "item": "recaptcha_sitekey",
+        "item": "turnstile_sitekey",
         "value": "",
-        "class": "recaptcha",
+        "class": "turnstile",
         "is_public": 0,
         "type": "string",
         "default": "",
-        "mark": "reCaptcha网站密钥"
+        "mark": "Turnstile网站密钥"
     },
     {
         "id": null,
-        "item": "recaptcha_secret",
+        "item": "turnstile_secret",
         "value": "",
-        "class": "recaptcha",
+        "class": "turnstile",
         "is_public": 0,
         "type": "string",
         "default": "",
-        "mark": "reCaptcha密钥"
+        "mark": "Turnstile密钥"
     },
     {
         "id": null,
@@ -331,53 +551,23 @@
     },
     {
         "id": null,
-        "item": "auto_backup_email",
+        "item": "aws_region",
         "value": "",
-        "class": "backup",
+        "class": "aws_ses",
         "is_public": 0,
         "type": "string",
         "default": "",
-        "mark": "接收备份的邮箱"
+        "mark": "aws区域"
     },
     {
         "id": null,
-        "item": "auto_backup_password",
+        "item": "aws_ses_sender",
         "value": "",
-        "class": "backup",
+        "class": "aws_ses",
         "is_public": 0,
         "type": "string",
         "default": "",
-        "mark": "备份的压缩密码"
-    },
-    {
-        "id": null,
-        "item": "payjs_url",
-        "value": "",
-        "class": "payjs",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "payjs_url"
-    },
-    {
-        "id": null,
-        "item": "payjs_mchid",
-        "value": "",
-        "class": "payjs",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "payjs_mchid"
-    },
-    {
-        "id": null,
-        "item": "payjs_key",
-        "value": "",
-        "class": "payjs",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "payjs_key"
+        "mark": "aws ses发送者"
     },
     {
         "id": null,
@@ -471,56 +661,6 @@
     },
     {
         "id": null,
-        "item": "theadpay_url",
-        "value": "",
-        "class": "theadpay",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "theadpay_url"
-    },
-    {
-        "id": null,
-        "item": "theadpay_mchid",
-        "value": "",
-        "class": "theadpay",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "theadpay_mchid"
-    },
-    {
-        "id": null,
-        "item": "theadpay_key",
-        "value": "",
-        "class": "theadpay",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "theadpay_key"
-    },
-    {
-        "id": null,
-        "item": "coinpay_appid",
-        "value": "",
-        "class": "coinpay",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "CoinPay应用ID"
-    },
-    {
-        "id": null,
-        "item": "coinpay_secret",
-        "value": "",
-        "class": "coinpay",
-        "is_public": 0,
-        "type": "string",
-        "default": "",
-        "mark": "CoinPay验证密钥"
-    },
-    {
-        "id": null,
         "item": "user_center_bg",
         "value": "0",
         "class": "personalise",
@@ -601,16 +741,6 @@
     },
     {
         "id": null,
-        "item": "auto_backup_notify",
-        "value": "0",
-        "class": "backup",
-        "is_public": 0,
-        "type": "bool",
-        "default": "0",
-        "mark": "备份是否通知到TG群中"
-    },
-    {
-        "id": null,
         "item": "reg_mode",
         "value": "open",
         "class": "register",
@@ -648,6 +778,86 @@
         "type": "int",
         "default": "5",
         "mark": "验证码有效期内单个ip可请求的发信次数"
+    },
+    {
+        "id": null,
+        "item": "enable_reg_im",
+        "value": "0",
+        "class": "register",
+        "is_public": 1,
+        "type": "bool",
+        "default": "0",
+        "mark": "注册时是否要求用户输入IM联系方式"
+    },
+    {
+        "id": null,
+        "item": "reg_forbidden_ip",
+        "value": "127.0.0.0/8,::1/128",
+        "class": "register",
+        "is_public": 0,
+        "type": "string",
+        "default": "127.0.0.0/8,::1/128",
+        "mark": "注册时默认禁止访问IP列表"
+    },
+    {
+        "id": null,
+        "item": "reg_forbidden_port",
+        "value": "",
+        "class": "register",
+        "is_public": 0,
+        "type": "string",
+        "default": "",
+        "mark": "注册时默认禁止访问端口列表"
+    },
+    {
+        "id": null,
+        "item": "random_group",
+        "value": "0",
+        "class": "register",
+        "is_public": 0,
+        "type": "string",
+        "default": "0",
+        "mark": "注册时随机分配到的分组"
+    },
+    {
+        "id": null,
+        "item": "min_port",
+        "value": "10000",
+        "class": "register",
+        "is_public": 1,
+        "type": "int",
+        "default": "10000",
+        "mark": "用户端口池最小值"
+    },
+    {
+        "id": null,
+        "item": "max_port",
+        "value": "65535",
+        "class": "register",
+        "is_public": 1,
+        "type": "int",
+        "default": "65535",
+        "mark": "用户端口池最大值"
+    },
+    {
+        "id": null,
+        "item": "free_user_reset_day",
+        "value": "0",
+        "class": "register",
+        "is_public": 0,
+        "type": "int",
+        "default": "0",
+        "mark": "免费用戶的流量重置日"
+    },
+    {
+        "id": null,
+        "item": "free_user_reset_bandwidth",
+        "value": "0",
+        "class": "register",
+        "is_public": 0,
+        "type": "int",
+        "default": "0",
+        "mark": "需要重置的免费流量"
     },
     {
         "id": null,
@@ -761,6 +971,26 @@
     },
     {
         "id": null,
+        "item": "mu_suffix",
+        "value": "microsoft.com",
+        "class": "register",
+        "is_public": 0,
+        "type": "string",
+        "default": "microsoft.com",
+        "mark": "单端口多用户混淆参数后缀"
+    },
+    {
+        "id": null,
+        "item": "mu_regex",
+        "value": "%5m%id.%suffix",
+        "class": "register",
+        "is_public": 0,
+        "type": "string",
+        "default": "%5m%id.%suffix",
+        "mark": "单端口多用户混淆参数表达式"
+    },
+    {
+        "id": null,
         "item": "sign_up_for_daily_report",
         "value": "0",
         "class": "register",
@@ -768,6 +998,26 @@
         "type": "bool",
         "default": "0",
         "mark": "注册后是否默认接收每日用量邮件推送"
+    },
+    {
+        "id": null,
+        "item": "invite_price",
+        "value": "-1",
+        "class": "invite",
+        "is_public": 1,
+        "type": "int",
+        "default": "-1",
+        "mark": "用户购买邀请码所需要的价格"
+    },
+    {
+        "id": null,
+        "item": "custom_invite_price",
+        "value": "-1",
+        "class": "invite",
+        "is_public": 1,
+        "type": "int",
+        "default": "-1",
+        "mark": "用户定制邀请码所需要的价格"
     },
     {
         "id": null,
@@ -861,122 +1111,232 @@
     },
     {
         "id": null,
-        "item": "stripe_currency",
-        "value": "HKD",
-        "class": "stripe",
-        "is_public": 0,
-        "type": "string",
-        "default": "HKD",
-        "mark": "货币代码"
-    },
-    {
-        "id": null,
-        "item": "stripe_sk",
-        "value": "stripe_sk",
-        "class": "stripe",
-        "is_public": 0,
-        "type": "string",
-        "default": "stripe_sk",
-        "mark": "stripe_sk"
-    },
-    {
-        "id": null,
-        "item": "stripe_pk",
-        "value": "stripe_pk",
-        "class": "stripe",
-        "is_public": 0,
-        "type": "string",
-        "default": "stripe_pk",
-        "mark": "stripe_pk"
-    },
-    {
-        "id": null,
-        "item": "stripe_webhook_key",
-        "value": "stripe_webhook_key",
-        "class": "stripe",
-        "is_public": 0,
-        "type": "string",
-        "default": "stripe_webhook_key",
-        "mark": "web_hook密钥"
-    },
-    {
-        "id": null,
-        "item": "stripe_min_recharge",
-        "value": "10",
-        "class": "stripe",
-        "is_public": 1,
-        "type": "int",
-        "default": "10",
-        "mark": "最低充值限额"
-    },
-    {
-        "id": null,
-        "item": "stripe_card",
+        "item": "telegram_enable",
         "value": "0",
-        "class": "stripe",
+        "class": "telegram",
         "is_public": 0,
         "type": "bool",
         "default": "0",
-        "mark": "银行卡支付"
+        "mark": "是否启用Telegram机器人"
     },
     {
         "id": null,
-        "item": "stripe_alipay",
+        "item": "telegram_add_node",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人添加节点通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_add_node_text",
+        "value": "%node_name% 已被添加",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "%node_name% 已被添加",
+        "mark": "Telegram机器人添加节点通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_update_node",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人修改节点通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_update_node_text",
+        "value": "%node_name% 已被修改",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "%node_name% 已被修改",
+        "mark": "Telegram机器人修改节点通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_delete_node",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人删除节点通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_delete_node_text",
+        "value": "%node_name% 被刪除了",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "%node_name% 被刪除了",
+        "mark": "Telegram机器人删除节点通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_gfwed",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人节点被墙通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_gfwed_text",
+        "value": "喵喵喵~ %node_name% 节点被墙了喵~",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "喵喵喵~ %node_name% 节点被墙了喵~",
+        "mark": "Telegram机器人节点被墙通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_ungfwed",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人节点被墙恢复通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_ungfwed_text",
+        "value": "喵喵喵~ 被墙的 %node_name% 节点恢复了喵~",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "喵喵喵~ 被墙的 %node_name% 节点恢复了喵~",
+        "mark": "Telegram机器人节点被墙恢复文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_online",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人节点恢复上线通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_online_text",
+        "value": "%node_name% 被修好了",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "%node_name% 被修好了",
+        "mark": "Telegram机器人节点恢复上线通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_offline",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人节点离线通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_node_offline_text",
+        "value": "%node_name% 出现了一些故障",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "%node_name% 出现了一些故障",
+        "mark": "Telegram机器人节点离线通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_daily_job",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人每日任务通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_daily_job_text",
+        "value": "成功执行每日任务",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "成功执行每日任务",
+        "mark": "Telegram机器人每日任务通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_diary",
+        "value": "1",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "1",
+        "mark": "是否启用Telegram机器人系统运行状况通知"
+    },
+    {
+        "id": null,
+        "item": "telegram_diary_text",
+        "value": "今日签到人数：%getTodayCheckinUser% \n 今日使用总流量：%lastday_total%",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "string",
+        "default": "今日签到人数：%getTodayCheckinUser% \n 今日使用总流量：%lastday_total%",
+        "mark": "Telegram机器人系统运行状况通知文本"
+    },
+    {
+        "id": null,
+        "item": "telegram_unbind_kick_member",
         "value": "0",
-        "class": "stripe",
+        "class": "telegram",
         "is_public": 0,
         "type": "bool",
         "default": "0",
-        "mark": "支付宝支付"
+        "mark": "解绑Telegram账户后自动踢出群组"
     },
     {
         "id": null,
-        "item": "stripe_wechat",
+        "item": "telegram_group_bound_user",
         "value": "0",
-        "class": "stripe",
+        "class": "telegram",
         "is_public": 0,
         "type": "bool",
         "default": "0",
-        "mark": "微信支付"
+        "mark": "是否仅允许已绑定Telegram账户的用户加入群组"
     },
     {
         "id": null,
-        "item": "stripe_max_recharge",
-        "value": "1000",
-        "class": "stripe",
-        "is_public": 1,
-        "type": "int",
-        "default": "1000",
-        "mark": "最高充值限额"
+        "item": "telegram_show_group_link",
+        "value": "0",
+        "class": "telegram",
+        "is_public": 0,
+        "type": "bool",
+        "default": "0",
+        "mark": "是否启用Telegram机器人显示用户群组链接"
     },
-	{
+    {
         "id": null,
-        "item": "epay_url",
-        "value": "1000",
-        "class": "epay",
+        "item": "telegram_group_link",
+        "value": "https://t.me/joinchat/XXXXX",
+        "class": "telegram",
         "is_public": 0,
         "type": "string",
-        "default": "1000",
-        "mark": "易支付url"
-    },
-	{
-        "id": null,
-        "item": "epay_pid",
-        "value": "1000",
-        "class": "epay",
-        "is_public": 0,
-        "type": "string",
-        "default": "1000",
-        "mark": "易支付商户ID"
-    },
-	{
-        "id": null,
-        "item": "epay_key",
-        "value": "1000",
-        "class": "epay",
-        "is_public": 0,
-        "type": "string",
-        "default": "1000",
-        "mark": "易支付商户Key"
+        "default": "https://t.me/joinchat/XXXXX",
+        "mark": "用户群组链接"
     }
 ]

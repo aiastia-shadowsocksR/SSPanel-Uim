@@ -15,7 +15,7 @@ final class TelegramTools
      * @param string $value  搜索值
      * @param string $method 查找列
      */
-    public static function getUser(string $value, string $method = 'telegram_id'): \App\Models\User
+    public static function getUser($value, $method = 'telegram_id')
     {
         return User::where($method, $value)->first();
     }
@@ -26,10 +26,10 @@ final class TelegramTools
      *
      * @param array $params
      */
-    public static function sendPost($Method, $Params): string
+    public static function sendPost($Method, $Params): void
     {
         $URL = 'https://api.telegram.org/bot' . $_ENV['telegram_token'] . '/' . $Method;
-        $POSTData = json_encode($Params);
+        $POSTData = \json_encode($Params);
         $C = curl_init();
         curl_setopt($C, CURLOPT_URL, $URL);
         curl_setopt($C, CURLOPT_POST, 1);
@@ -94,7 +94,7 @@ final class TelegramTools
         $old = $User->$useOptionMethod;
         $useOptionMethodName = self::getUserActionOption()[$useOptionMethod][0];
         switch ($useOptionMethod) {
-                // ##############
+            // ##############
             case 'enable':
             case 'is_admin':
                 $strArray = [
@@ -108,10 +108,10 @@ final class TelegramTools
                         'msg' => '处理出错，不支持的写法.' . PHP_EOL . PHP_EOL . self::strArrayToCode($strArray),
                     ];
                 }
-                if (in_array($value, ['启用', '是'])) {
+                if (\in_array($value, ['启用', '是'])) {
                     $User->$useOptionMethod = 1;
                     $new = '启用';
-                } elseif (in_array($value, ['禁用', '否'])) {
+                } elseif (\in_array($value, ['禁用', '否'])) {
                     $User->$useOptionMethod = 0;
                     $new = '禁用';
                 } else {
@@ -218,7 +218,7 @@ final class TelegramTools
                     $number = $value;
                     if (is_numeric($value)) {
                         $number *= 86400;
-                        $new = time() + $number;
+                        $new = \time() + $number;
                         $new = date('Y-m-d H:i:s', $new);
                     } else {
                         if (strtotime($value) === false) {
@@ -474,7 +474,7 @@ final class TelegramTools
             strpos($Value, '/') === 0
         ) {
             $operator = substr($Value, 0, 1);
-            if (! in_array($operator, ['*', '/'])) {
+            if (! \in_array($operator, ['*', '/'])) {
                 $number = Tools::flowAutoShowZ(substr($Value, 1));
             } else {
                 $number = substr($Value, 1, strlen($Value) - 1);

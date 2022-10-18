@@ -39,11 +39,13 @@ final class NodeController extends BaseController
             $array_node['id'] = $node->id;
             $array_node['name'] = $node->name;
             $array_node['class'] = $node->node_class;
+            $array_node['sort'] = $node->sort;
             $array_node['info'] = $node->info;
             $array_node['flag'] = $node->getNodeFlag();
             $array_node['online_user'] = $node->getNodeOnlineUserCount();
             $array_node['online'] = $node->getNodeOnlineStatus();
-            $array_node['latest_load'] = $node->getNodeLatestLoadText();
+            $array_node['load'] = $node->getNodeLoad();
+            $array_node['uptime'] = $node->getNodeUptime();
             $array_node['traffic_rate'] = $node->traffic_rate;
             $array_node['status'] = $node->status;
             $array_node['traffic_used'] = (int) Tools::flowToGB($node->node_bandwidth);
@@ -51,7 +53,7 @@ final class NodeController extends BaseController
             $array_node['bandwidth'] = $node->getNodeSpeedlimit();
 
             $all_connect = [];
-            if (in_array($node->sort, [0])) {
+            if (\in_array($node->sort, [0])) {
                 if ($node->mu_only !== 1) {
                     $all_connect[] = 0;
                 }
@@ -80,23 +82,6 @@ final class NodeController extends BaseController
             $this->view()
                 ->assign('nodes', $all_node)
                 ->display('user/node/index.tpl')
-        );
-    }
-
-    /**
-     * @param array     $args
-     */
-    public function userNodeAjax(Request $request, Response $response, array $args): ResponseInterface
-    {
-        $id = $args['id'];
-        $point_node = Node::find($id);
-        $prefix = explode(' - ', $point_node->name);
-        return $response->write(
-            $this->view()
-                ->assign('point_node', $point_node)
-                ->assign('prefix', $prefix[0])
-                ->assign('id', $id)
-                ->display('user/node/nodeajax.tpl')
         );
     }
 

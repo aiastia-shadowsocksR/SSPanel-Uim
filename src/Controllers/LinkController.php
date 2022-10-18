@@ -8,6 +8,7 @@ namespace App\Controllers;
 
 use App\Models\Link;
 use App\Models\User;
+
 use App\Models\UserSubscribeLog;
 use App\Utils\AppURI;
 use App\Utils\ConfGenerate;
@@ -106,12 +107,6 @@ final class LinkController extends BaseController
             $Rule['content']['regex'] = trim(urldecode($opts['regex']));
         }
 
-        // Emoji
-        $Rule['emoji'] = $_ENV['add_emoji_to_node_name'];
-        if (isset($opts['emoji'])) {
-            $Rule['emoji'] = (bool) $opts['emoji'];
-        }
-
         // 显示流量以及到期时间等
         $Rule['extend'] = $_ENV['enable_sub_extend'];
         if (isset($opts['extend'])) {
@@ -150,7 +145,6 @@ final class LinkController extends BaseController
             if (isset($opts[$key])) {
                 $query_value = $opts[$key];
                 if ($query_value !== '0' && $query_value !== '') {
-
                     // 兼容代码开始
                     if ($key === 'sub' && $query_value > 4) {
                         $query_value = 1;
@@ -162,7 +156,7 @@ final class LinkController extends BaseController
                     } else {
                         $SubscribeExtend = self::getSubscribeExtend($key, $query_value);
                     }
-                    $filename = $SubscribeExtend['filename'] . '_' . time() . '.' . $SubscribeExtend['suffix'];
+                    $filename = $SubscribeExtend['filename'] . '_' . \time() . '.' . $SubscribeExtend['suffix'];
                     $subscribe_type = $SubscribeExtend['filename'];
 
                     $class = 'get' . $SubscribeExtend['class'];
@@ -226,7 +220,7 @@ final class LinkController extends BaseController
                     3 => 'v2rayn',
                     4 => 'trojan',
                 ];
-                $str = (! in_array($value, $strArray) ? $strArray[$value] : $strArray[1]);
+                $str = (! \in_array($value, $strArray) ? $strArray[$value] : $strArray[1]);
                 $return = self::getSubscribeExtend($str);
                 break;
             case 'clash':
@@ -401,7 +395,7 @@ final class LinkController extends BaseController
         if ($int === 0) {
             $int = '';
         }
-        $userapiUrl = $_ENV['subUrl'] . self::generateSSRSubCode($user->id);
+        $userapiUrl = $_ENV['subUrl'] . '/link/' . self::generateSSRSubCode($user->id);
         $return_info = [
             'link' => '',
             // sub
@@ -490,10 +484,6 @@ final class LinkController extends BaseController
         if ($list === 'quantumult') {
             $Rule['type'] = 'vmess';
         }
-        if ($list === 'shadowrocket') {
-            // Shadowrocket 自带 emoji
-            $Rule['emoji'] = false;
-        }
         $items = URL::getNewAllItems($user, $Rule);
         $return = [];
         if ($Rule['extend'] === true) {
@@ -515,7 +505,7 @@ final class LinkController extends BaseController
         }
         switch ($list) {
             case 'ssa':
-                return json_encode($return, 320);
+                return \json_encode($return, 320);
                 break;
             case 'clash':
                 return \Symfony\Component\Yaml\Yaml::dump(['proxies' => $return], 4, 2);
@@ -532,7 +522,7 @@ final class LinkController extends BaseController
     {
         $return = [];
         $info_array = (count($_ENV['sub_message']) !== 0 ? (array) $_ENV['sub_message'] : []);
-        if (strtotime($user->expire_in) > time()) {
+        if (strtotime($user->expire_in) > \time()) {
             if ($user->transfer_enable === 0) {
                 $unusedTraffic = '剩余流量：0';
             } else {
@@ -549,7 +539,7 @@ final class LinkController extends BaseController
             $unusedTraffic = '账户已过期，请续费后使用';
             $expire_in = '账户已过期，请续费后使用';
         }
-        if (! in_array($list, ['quantumult', 'quantumultx', 'shadowrocket'])) {
+        if (! \in_array($list, ['quantumult', 'quantumultx', 'shadowrocket'])) {
             $info_array[] = $unusedTraffic;
             $info_array[] = $expire_in;
         }
@@ -581,7 +571,7 @@ final class LinkController extends BaseController
         }
         foreach ($info_array as $remark) {
             $Extend['remark'] = $remark;
-            if (in_array($list, ['kitsunebi', 'quantumult', 'v2rayn'])) {
+            if (\in_array($list, ['kitsunebi', 'quantumult', 'v2rayn'])) {
                 $Extend['type'] = 'vmess';
                 $out = self::getListItem($Extend, $list);
             } elseif ($list === 'trojan') {
@@ -609,7 +599,7 @@ final class LinkController extends BaseController
      * @param array $opts  request
      * @param array $Rule  节点筛选规则
      */
-    public static function getSurge(User $user, int $surge, array $opts, array $Rule): string
+    public static function getSurge(User $user, $surge, array $opts, array $Rule): string
     {
         if ($surge !== 4) {
             $Rule['type'] = 'ss';
@@ -625,12 +615,11 @@ final class LinkController extends BaseController
             }
         }
         $variable = ($surge === 2 ? 'Surge2_Profiles' : 'Surge_Profiles');
-        if (isset($opts['profiles']) && in_array($opts['profiles'], array_keys($_ENV[$variable]))) {
+        if (isset($opts['profiles']) && \in_array($opts['profiles'], array_keys($_ENV[$variable]))) {
             $Profiles = $opts['profiles'];
         } else {
             $Profiles = ($surge === 2 ? $_ENV['Surge2_DefaultProfiles'] : $_ENV['Surge_DefaultProfiles']);
         }
-
         return ConfGenerate::getSurgeConfs($user, $All_Proxy, $Nodes, $_ENV[$variable][$Profiles]);
     }
 
@@ -642,7 +631,7 @@ final class LinkController extends BaseController
      * @param array $opts       request
      * @param array $Rule       节点筛选规则
      */
-    public static function getQuantumult(User $user, int $quantumult, array $opts, array $Rule): string
+    public static function getQuantumult(User $user, $quantumult, array $opts, array $Rule): string
     {
         switch ($quantumult) {
             case 2:
@@ -696,7 +685,6 @@ final class LinkController extends BaseController
         ];
         $render = ConfRender::getTemplateRender();
         $render->assign('All_Proxy', $All_Proxy)->assign('ProxyGroups', $ProxyGroups);
-
         return $render->fetch('quantumult/quantumult.tpl');
     }
 
@@ -708,7 +696,7 @@ final class LinkController extends BaseController
      * @param array $opts        request
      * @param array $Rule        节点筛选规则
      */
-    public static function getQuantumultX(User $user, int $quantumultx, array $opts, array $Rule): string
+    public static function getQuantumultX(User $user, $quantumultx, array $opts, array $Rule): string
     {
         return '';
     }
@@ -733,7 +721,7 @@ final class LinkController extends BaseController
                 $All_Proxy .= $out . PHP_EOL;
             }
         }
-        if (isset($opts['profiles']) && in_array($opts['profiles'], array_keys($_ENV['Surfboard_Profiles']))) {
+        if (isset($opts['profiles']) && \in_array($opts['profiles'], array_keys($_ENV['Surfboard_Profiles']))) {
             $Profiles = $opts['profiles'];
         } else {
             $Profiles = $_ENV['Surfboard_DefaultProfiles']; // 默认策略组
@@ -760,12 +748,11 @@ final class LinkController extends BaseController
                 $Proxys[] = $Proxy;
             }
         }
-        if (isset($opts['profiles']) && in_array($opts['profiles'], array_keys($_ENV['Clash_Profiles']))) {
+        if (isset($opts['profiles']) && \in_array($opts['profiles'], array_keys($_ENV['Clash_Profiles']))) {
             $Profiles = $opts['profiles'];
         } else {
             $Profiles = $_ENV['Clash_DefaultProfiles']; // 默认策略组
         }
-
         return ConfGenerate::getClashConfs($user, $Proxys, $_ENV['Clash_Profiles'][$Profiles]);
     }
 

@@ -53,6 +53,7 @@ final class UserController extends BaseController
             'last_ss_time' => '上次使用时间',
             'used_traffic' => '已用流量/GB',
             'enable_traffic' => '总流量/GB',
+            'transfer_total' => '账户累计使用流量/GB',
             'last_checkin_time' => '上次签到时间',
             'today_traffic' => '今日流量',
             'enable' => '是否启用',
@@ -91,7 +92,7 @@ final class UserController extends BaseController
             ]);
         }
 
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! Tools::isEmail($email)) {
             return $response->withJson([
                 'ret' => 0,
                 'msg' => '邮箱不规范',
@@ -101,7 +102,7 @@ final class UserController extends BaseController
         $configs = Setting::getClass('register');
         // do reg user
         $user = new User();
-        $current_timestamp = time();
+        $current_timestamp = \time();
         $pass = Tools::genRandomChar();
         $user->user_name = $email;
         $user->email = $email;
@@ -118,25 +119,25 @@ final class UserController extends BaseController
         $user->protocol_param = $configs['sign_up_for_protocol_param'];
         $user->obfs = $configs['sign_up_for_obfs'];
         $user->obfs_param = $configs['sign_up_for_obfs_param'];
-        $user->forbidden_ip = $_ENV['reg_forbidden_ip'];
-        $user->forbidden_port = $_ENV['reg_forbidden_port'];
+        $user->forbidden_ip = Setting::obtain('reg_forbidden_ip');
+        $user->forbidden_port = Setting::obtain('reg_forbidden_port');
         $user->im_type = 2;
         $user->im_value = $email;
         $user->transfer_enable = Tools::toGB($configs['sign_up_for_free_traffic']);
         $user->invite_num = $configs['sign_up_for_invitation_codes'];
-        $user->auto_reset_day = $_ENV['free_user_reset_day'];
-        $user->auto_reset_bandwidth = $_ENV['free_user_reset_bandwidth'];
+        $user->auto_reset_day = Setting::obtain('free_user_reset_day');
+        $user->auto_reset_bandwidth = Setting::obtain('free_user_reset_bandwidth');
         $user->money = ($money !== -1 ? $money : 0);
-        $user->class_expire = date('Y-m-d H:i:s', time() + $configs['sign_up_for_class_time'] * 86400);
+        $user->class_expire = date('Y-m-d H:i:s', \time() + $configs['sign_up_for_class_time'] * 86400);
         $user->class = $configs['sign_up_for_class'];
         $user->node_connector = $configs['connection_device_limit'];
         $user->node_speedlimit = $configs['connection_rate_limit'];
-        $user->expire_in = date('Y-m-d H:i:s', time() + $configs['sign_up_for_free_time'] * 86400);
+        $user->expire_in = date('Y-m-d H:i:s', \time() + $configs['sign_up_for_free_time'] * 86400);
         $user->reg_date = date('Y-m-d H:i:s');
         $user->reg_ip = $_SERVER['REMOTE_ADDR'];
         $user->theme = $_ENV['theme'];
 
-        $groups = explode(',', $_ENV['random_group']);
+        $groups = explode(',', Setting::obtain('random_group'));
 
         $user->node_group = $groups[array_rand($groups)];
 
@@ -156,7 +157,7 @@ final class UserController extends BaseController
                     $bought = new Bought();
                     $bought->userid = $user->id;
                     $bought->shopid = $shop->id;
-                    $bought->datetime = time();
+                    $bought->datetime = \time();
                     $bought->renew = 0;
                     $bought->coupon = '';
                     $bought->price = $shop->price;
@@ -302,7 +303,7 @@ final class UserController extends BaseController
         $adminid = $request->getParam('adminid');
         $user = User::find($userid);
         $admin = User::find($adminid);
-        $expire_in = time() + 60 * 60;
+        $expire_in = \time() + 60 * 60;
 
         if (! $admin->is_admin || ! $user || ! Auth::getUser()->isLogin) {
             return $response->withJson([
@@ -388,6 +389,7 @@ final class UserController extends BaseController
                 'last_ss_time' => $value->lastSsTime(),
                 'used_traffic' => Tools::flowToGB($value->u + $value->d),
                 'enable_traffic' => Tools::flowToGB($value->transfer_enable),
+                'transfer_total' => Tools::flowToGB($value->transfer_total),
                 'last_checkin_time' => $value->lastCheckInTime(),
                 'today_traffic' => $value->todayUsedTraffic(),
                 'enable' => $value->enable === 1 ? '可用' : '禁用',

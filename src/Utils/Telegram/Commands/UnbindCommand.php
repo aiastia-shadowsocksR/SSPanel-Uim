@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Utils\Telegram\Commands;
 
-use App\Models\User;
-use App\Services\Config;
+use App\Models\Setting;
+use App\Utils\Telegram\TelegramTools;
 use Telegram\Bot\Actions;
 use Telegram\Bot\Commands\Command;
 
@@ -38,7 +38,7 @@ final class UnbindCommand extends Command
             'username' => $Message->getFrom()->getUsername(),
         ];
 
-        $User = User::where('telegram_id', $SendUser['id'])->first();
+        $User = TelegramTools::getUser($SendUser['id']);
 
         if ($ChatID > 0) {
             // 私人
@@ -58,9 +58,10 @@ final class UnbindCommand extends Command
             }
 
             // 消息内容
-            $MessageText = implode(' ', array_splice(explode(' ', trim($Message->getText())), 1));
+            $MessageText = explode(' ', trim($Message->getText()));
+            $MessageKey = array_splice($MessageText, -1)[0];
 
-            if ($MessageText === $User->email) {
+            if ($MessageKey === $User->email) {
                 $temp = $User->telegramReset();
                 $text = $temp['msg'];
                 // 回送信息
@@ -72,10 +73,11 @@ final class UnbindCommand extends Command
                 );
                 return;
             }
-
-            $text = $this->sendtext();
-            if ($MessageText !== '') {
+            if ($MessageKey !== '') {
                 $text = '键入的 Email 地址与您的账户不匹配.';
+            }
+            if ($MessageKey === '/unbind') {
+                $text = $this->sendtext();
             }
 
             // 回送信息
@@ -90,8 +92,8 @@ final class UnbindCommand extends Command
 
     public function sendtext()
     {
-        $text = '发送 **/unbind 账户邮箱** 进行解绑.';
-        if (Config::getconfig('Telegram.bool.unbind_kick_member') === true) {
+        $text = '以 `/unbind example@qq.com` 的形式发送进行解绑.';
+        if (Setting::obtain('telegram_unbind_kick_member') === true) {
             $text .= PHP_EOL . PHP_EOL . '根据管理员的设定，您解绑账户将会被自动移出用户群.';
         }
         return $text;

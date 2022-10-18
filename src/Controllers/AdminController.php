@@ -150,7 +150,7 @@ final class AdminController extends BaseController
                 'msg' => '邀请次数添加失败，检查用户id或者用户邮箱是否输入正确',
             ]);
         }
-        $user->addInviteNum($num);
+        $user->addInviteNum((int) $num);
         return $response->withJson([
             'ret' => 1,
             'msg' => '邀请次数添加成功',
@@ -204,7 +204,7 @@ final class AdminController extends BaseController
     {
         $generate_type = (int) $request->getParam('generate_type');
         $final_code = $request->getParam('prefix');
-        if (! isset($final_code) && in_array($generate_type, [1, 3])) {
+        if (! isset($final_code) && \in_array($generate_type, [1, 3])) {
             return $response->withJson([
                 'ret' => 0,
                 'msg' => '优惠码不能为空',
@@ -233,7 +233,7 @@ final class AdminController extends BaseController
         $code = new Coupon();
         $code->onetime = $request->getParam('onetime');
         $code->code = $final_code;
-        $code->expire = time() + $request->getParam('expire') * 3600;
+        $code->expire = \time() + $request->getParam('expire') * 3600;
         $code->shop = $request->getParam('shop');
         $code->credit = $request->getParam('credit');
         $code->save();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Utils\Telegram\Commands;
 
+use App\Utils\Telegram\TelegramTools;
 use Telegram\Bot\Actions;
 use Telegram\Bot\Commands\Command;
 
@@ -60,7 +61,7 @@ final class MenuCommand extends Command
                     'parse_mode' => 'Markdown',
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $reply['keyboard'],
                         ]

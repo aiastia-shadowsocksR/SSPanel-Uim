@@ -4,17 +4,6 @@ declare(strict_types=1);
 
 namespace App\Utils;
 
-/**
- * PHP Class for handling Google Authenticator 2-factor authentication
- *
- * @author Michael Kliewe
- *
- * @copyright 2012 Michael Kliewe
- *
- * @license http://www.opensource.org/licenses/bsd-license.php BSD License
- *
- * @link http://www.phpgangsta.de/
- */
 final class GA
 {
     private $codeLength = 6;
@@ -41,7 +30,7 @@ final class GA
     public function getCode(string $secret, ?int $timeSlice = null): string
     {
         if ($timeSlice === null) {
-            $timeSlice = floor(time() / 30);
+            $timeSlice = floor(\time() / 30);
         }
 
         $secretkey = $this->_base32Decode($secret);
@@ -86,16 +75,10 @@ final class GA
         return $urlencoded;
     }
 
-    /**
-     * Check if the code is correct. This will accept codes starting from $discrepancy*30sec ago to $discrepancy*30sec from now
-     *
-     * @param int $discrepancy This is the allowed time drift in 30 second units (8 means 4 minutes before or after)
-     * @param int|null $currentTimeSlice time slice if we want use other that time()
-     */
     public function verifyCode(string $secret, string $code, int $discrepancy = 1, ?int $currentTimeSlice = null): bool
     {
         if ($currentTimeSlice === null) {
-            $currentTimeSlice = floor(time() / 30);
+            $currentTimeSlice = floor(\time() / 30);
         }
 
         for ($i = -$discrepancy; $i <= $discrepancy; $i++) {
@@ -108,24 +91,12 @@ final class GA
         return false;
     }
 
-    /**
-     * Set the code length, should be >=6
-     *
-     * @return GA|PHPGangsta_GoogleAuthenticator
-     */
     public function setCodeLength(int $length)
     {
         $this->codeLength = $length;
         return $this;
     }
 
-    /**
-     * Helper class to decode base32
-     *
-     * @param $secret
-     *
-     * @return bool|string
-     */
     private function _base32Decode($secret)
     {
         if ($secret === '') {
@@ -137,7 +108,7 @@ final class GA
 
         $paddingCharCount = substr_count($secret, $base32chars[32]);
         $allowedValues = [6, 4, 3, 1, 0];
-        if (! in_array($paddingCharCount, $allowedValues)) {
+        if (! \in_array($paddingCharCount, $allowedValues)) {
             return false;
         }
         for ($i = 0; $i < 4; $i++) {
@@ -151,7 +122,7 @@ final class GA
         $binaryString = '';
         for ($i = 0, $iMax = count($secret); $i < $iMax; $i += 8) {
             $x = '';
-            if (! in_array($secret[$i], $base32chars)) {
+            if (! \in_array($secret[$i], $base32chars)) {
                 return false;
             }
             for ($j = 0; $j < 8; $j++) {
@@ -165,9 +136,6 @@ final class GA
         return $binaryString;
     }
 
-    /**
-     * Helper class to encode base32
-     */
     private function _base32Encode(string $secret, bool $padding = true): string
     {
         if ($secret !== '') {
@@ -204,11 +172,6 @@ final class GA
         return $base32;
     }
 
-    /**
-     * Get array with all 32 characters for decoding from/encoding to base32
-     *
-     * @return array
-     */
     private function _getBase32LookupTable(): array
     {
         return [

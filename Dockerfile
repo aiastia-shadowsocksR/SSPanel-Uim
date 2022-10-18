@@ -9,12 +9,10 @@ RUN cp config/.config.example.php "config/.config.php" && \
     chmod -R 755 storage && \
     chmod -R 777 /var/www/storage/framework/smarty/compile/ && \
     mv db/migrations/20000101000000_init_database.php.new db/migrations/20000101000000_init_database.php && \
-    curl -SL https://getcomposer.org/installer -o composer-setup.php && \
-    php composer-setup.php && \
+    curl -SL https://getcomposer.org/installer -o composer.phar && \
+    php composer.phar && \
+    php composer.phar config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true && \
     php composer.phar install && \
-    php vendor/bin/phinx migrate && \
-    php xcat Tool importAllSettings && \
-    php xcat Tool detectConfigs && \
     php xcat initQQWry && \
     php xcat ClientDownload && \
     crontab -l | { cat; echo "30 23 * * * php /var/www/xcat SendDiaryMail"; } | crontab - && \

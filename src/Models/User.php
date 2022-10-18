@@ -102,12 +102,12 @@ final class User extends Model
     {
         $str = str_replace(
             ['%id', '%suffix'],
-            [$this->id, $_ENV['mu_suffix']],
-            $_ENV['mu_regex']
+            [$this->id, Setting::obtain('mu_suffix')],
+            Setting::obtain('mu_regex')
         );
         preg_match_all("|%-?[1-9]\d*m|U", $str, $matches, PREG_PATTERN_ORDER);
         foreach ($matches[0] as $key) {
-            $key_match = str_replace(['%', 'm'], '', $key);
+            $key_match = (int) str_replace(['%', 'm'], '', $key);
             $md5 = substr(
                 md5($this->id . $this->passwd . $this->method . $this->obfs . $this->protocol),
                 ($key_match < 0 ? $key_match : 0),
@@ -151,15 +151,6 @@ final class User extends Model
     public function getForbiddenPort()
     {
         return str_replace(',', PHP_EOL, $this->forbidden_port);
-    }
-
-    /**
-     * 更新连接密码
-     */
-    public function updateSsPwd(string $pwd): bool
-    {
-        $this->passwd = $pwd;
-        return $this->save();
     }
 
     /**
@@ -214,7 +205,7 @@ final class User extends Model
                     $code->save();
                     return $temp_code;
                 }
-                return (InviteCode::where('user_id', $this->id)->first())->code;
+                return InviteCode::where('user_id', $this->id)->first()->code;
             }
         }
     }
@@ -238,6 +229,11 @@ final class User extends Model
             $this->email . '|' . $s
         );
         return $this->save();
+    }
+
+    public function lastDayTraffic(): string
+    {
+        return Tools::flowAutoShow($this->u + $this->d - $this->last_day_t);
     }
 
     /*
@@ -288,14 +284,14 @@ final class User extends Model
     /*
      * 剩余流量占总流量的百分比
      */
-    public function unusedTrafficPercent(): int
+    public function unusedTrafficPercent(): float
     {
         if ($this->transfer_enable === 0) {
             return 0;
         }
         $unused = $this->transfer_enable - ($this->u + $this->d);
         $percent = $unused / $this->transfer_enable;
-        $percent = round($percent, 2);
+        $percent = round($percent, 4);
         return $percent * 100;
     }
 
@@ -310,14 +306,14 @@ final class User extends Model
     /*
      * 今天使用的流量占总流量的百分比
      */
-    public function todayUsedTrafficPercent(): int
+    public function todayUsedTrafficPercent(): float
     {
         if ($this->transfer_enable === 0) {
             return 0;
         }
         $Todayused = $this->u + $this->d - $this->last_day_t;
         $percent = $Todayused / $this->transfer_enable;
-        $percent = round($percent, 2);
+        $percent = round($percent, 4);
         return $percent * 100;
     }
 
@@ -332,14 +328,14 @@ final class User extends Model
     /*
      * 今天之前已使用的流量占总流量的百分比
      */
-    public function lastUsedTrafficPercent(): int
+    public function lastUsedTrafficPercent(): float
     {
         if ($this->transfer_enable === 0) {
             return 0;
         }
         $Lastused = $this->last_day_t;
         $percent = $Lastused / $this->transfer_enable;
-        $percent = round($percent, 2);
+        $percent = round($percent, 4);
         return $percent * 100;
     }
 
@@ -423,7 +419,7 @@ final class User extends Model
     public function onlineIpCount(): int
     {
         // 根据 IP 分组去重
-        $total = Ip::where('datetime', '>=', time() - 90)->where('userid', $this->id)->orderBy('userid', 'desc')->groupBy('ip')->get();
+        $total = Ip::where('datetime', '>=', \time() - 90)->where('userid', $this->id)->orderBy('userid', 'desc')->groupBy('ip')->get();
         $ip_list = [];
         foreach ($total as $single_record) {
             $ip = Tools::getRealIp($single_record->ip);
@@ -571,7 +567,7 @@ final class User extends Model
         } else {
             $traffic = random_int((int) $_ENV['checkinMin'], (int) $_ENV['checkinMax']);
             $this->transfer_enable += Tools::toMB($traffic);
-            $this->last_check_in_time = time();
+            $this->last_check_in_time = \time();
             $this->save();
             $return['msg'] = '获得了 ' . $traffic . 'MB 流量.';
         }
@@ -673,9 +669,9 @@ final class User extends Model
             if (
                 $_ENV['enable_telegram'] === true
                 &&
-                Config::getconfig('Telegram.bool.group_bound_user') === true
+                Setting::obtain('telegram_group_bound_user') === true
                 &&
-                Config::getconfig('Telegram.bool.unbind_kick_member') === true
+                Setting::obtain('telegram_unbind_kick_member') === true
                 &&
                 ! $this->is_admin
             ) {
@@ -703,7 +699,7 @@ final class User extends Model
     public function setPort(int $Port): array
     {
         $PortOccupied = User::pluck('port')->toArray();
-        if (in_array($Port, $PortOccupied) === true) {
+        if (\in_array($Port, $PortOccupied) === true) {
             return [
                 'ok' => false,
                 'msg' => '端口已被占用',
@@ -751,14 +747,14 @@ final class User extends Model
                 'msg' => '余额不足',
             ];
         }
-        if ($Port < $_ENV['min_port'] || $Port > $_ENV['max_port'] || Tools::isInt($Port) === false) {
+        if ($Port < Setting::obtain('min_port') || $Port > Setting::obtain('max_port') || Tools::isInt($Port) === false) {
             return [
                 'ok' => false,
                 'msg' => '端口不在要求范围内',
             ];
         }
         $PortOccupied = User::pluck('port')->toArray();
-        if (in_array($Port, $PortOccupied) === true) {
+        if (\in_array($Port, $PortOccupied) === true) {
             return [
                 'ok' => false,
                 'msg' => '端口已被占用',
@@ -817,25 +813,24 @@ final class User extends Model
     /**
      * 发送邮件
      *
-     * @param array  $ary
+     * @param array  $array
      * @param array  $files
      */
-    public function sendMail(string $subject, string $template, array $ary = [], array $files = [], $is_queue = false): bool
+    public function sendMail(string $subject, string $template, array $array = [], array $files = [], $is_queue = false): bool
     {
-        $result = false;
         if ($is_queue) {
-            $new_emailqueue = new EmailQueue();
-            $new_emailqueue->to_email = $this->email;
-            $new_emailqueue->subject = $subject;
-            $new_emailqueue->template = $template;
-            $new_emailqueue->time = time();
-            $ary = array_merge(['user' => $this], $ary);
-            $new_emailqueue->array = json_encode($ary);
-            $new_emailqueue->save();
+            $emailqueue = new EmailQueue();
+            $emailqueue->to_email = $this->email;
+            $emailqueue->subject = $subject;
+            $emailqueue->template = $template;
+            $emailqueue->time = \time();
+            $array = array_merge(['user' => $this], $array);
+            $emailqueue->array = \json_encode($array);
+            $emailqueue->save();
             return true;
         }
         // 验证邮箱地址是否正确
-        if (filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+        if (Tools::isEmail($this->email)) {
             // 发送邮件
             try {
                 Mail::send(
@@ -846,16 +841,16 @@ final class User extends Model
                         [
                             'user' => $this,
                         ],
-                        $ary
+                        $array
                     ),
                     $files
                 );
-                $result = true;
+                return true;
             } catch (Exception $e) {
                 echo $e->getMessage();
             }
         }
-        return $result;
+        return false;
     }
 
     /**
@@ -864,12 +859,16 @@ final class User extends Model
     public function sendTelegram(string $text): bool
     {
         $result = false;
-        if ($this->telegram_id > 0) {
-            Telegram::send(
-                $text,
-                $this->telegram_id
-            );
-            $result = true;
+        try {
+            if ($this->telegram_id > 0) {
+                Telegram::send(
+                    $text,
+                    $this->telegram_id
+                );
+                $result = true;
+            }
+        } catch (Exception $e) {
+            echo $e->getMessage();
         }
         return $result;
     }
@@ -881,7 +880,10 @@ final class User extends Model
      */
     public function sendDailyNotification(string $ann = ''): void
     {
-        $lastday = ($this->u + $this->d - $this->last_day_t) / 1024 / 1024;
+        $lastday = $this->lastDayTraffic();
+        $enable_traffic = $this->enableTraffic();
+        $used_traffic = $this->usedTraffic();
+        $unused_traffic = $this->unusedTraffic();
         switch ($this->sendDailyMail) {
             case 0:
                 return;
@@ -892,19 +894,23 @@ final class User extends Model
                     'news/daily-traffic-report.tpl',
                     [
                         'user' => $this,
-                        'text' => '下面是系统中目前的公告:<br><br>' . $ann . '<br><br>晚安！',
+                        'text' => '下面是系统中目前的最新公告:<br><br>' . $ann . '<br><br>晚安！',
                         'lastday' => $lastday,
+                        'enable_traffic' => $enable_traffic,
+                        'used_traffic' => $used_traffic,
+                        'unused_traffic' => $unused_traffic,
                     ],
-                    []
+                    [],
+                    true
                 );
                 break;
             case 2:
                 echo 'Send daily Telegram message to user: ' . $this->id;
                 $text = date('Y-m-d') . ' 流量使用报告' . PHP_EOL . PHP_EOL;
-                $text .= '流量总计：' . $this->enableTraffic() . PHP_EOL;
-                $text .= '已用流量：' . $this->usedTraffic() . PHP_EOL;
-                $text .= '剩余流量：' . $this->unusedTraffic() . PHP_EOL;
-                $text .= '今日使用：' . $lastday . 'MB';
+                $text .= '流量总计：' . $enable_traffic . PHP_EOL;
+                $text .= '已用流量：' . $used_traffic . PHP_EOL;
+                $text .= '剩余流量：' . $unused_traffic . PHP_EOL;
+                $text .= '今日使用：' . $lastday;
                 $this->sendTelegram(
                     $text
                 );
@@ -922,7 +928,7 @@ final class User extends Model
         $loginip = new LoginIp();
         $loginip->ip = $ip;
         $loginip->userid = $this->id;
-        $loginip->datetime = time();
+        $loginip->datetime = \time();
         $loginip->type = $type;
 
         return $loginip->save();

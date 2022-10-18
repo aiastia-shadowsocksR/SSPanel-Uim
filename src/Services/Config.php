@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\GConfig;
 use App\Models\Setting;
 
 // Config is singleton instance store all config
@@ -40,15 +39,6 @@ final class Config
     public static function get($key)
     {
         return $_ENV[$key];
-    }
-
-    public static function getconfig($key)
-    {
-        $value = GConfig::where('key', '=', $key)->first();
-        if ($value === null) {
-            $value = DefaultConfig::firstOrCreate($key);
-        }
-        return $value->getValue();
     }
 
     public static function getPublicConfig()
@@ -88,32 +78,38 @@ final class Config
             // 注册
             'register_mode' => $public_configs['reg_mode'],
             'enable_email_verify' => $public_configs['reg_email_verify'],
+            'enable_reg_im' => $public_configs['enable_reg_im'],
+            'min_port' => $public_configs['min_port'],
+            'max_port' => $public_configs['max_port'],
+            'invite_price' => $public_configs['invite_price'],
+            'custom_invite_price' => $public_configs['custom_invite_price'],
             // 邀请
             'invite_get_money' => $public_configs['invitation_to_register_balance_reward'],
             'invite_gift' => $public_configs['invitation_to_register_traffic_reward'],
             'code_payback' => $public_configs['rebate_ratio'],
+            // EPay
+            'epay_alipay' => $public_configs['epay_alipay'],
+            'epay_wechat' => $public_configs['epay_wechat'],
+            'epay_qq' => $public_configs['epay_qq'],
+            'epay_usdt' => $public_configs['epay_usdt'],
             // 待处理
-            'min_port' => $_ENV['min_port'],
-            'max_port' => $_ENV['max_port'],
             'enable_checkin' => $_ENV['enable_checkin'],
             'checkinMin' => $_ENV['checkinMin'],
             'checkinMax' => $_ENV['checkinMax'],
-            'invite_price' => $_ENV['invite_price'],
+
             'port_price' => $_ENV['port_price'],
             'port_price_specify' => $_ENV['port_price_specify'],
             'jump_delay' => $_ENV['jump_delay'],
             'enable_analytics_code' => $_ENV['enable_analytics_code'],
             'enable_donate' => $_ENV['enable_donate'],
             'enable_ticket' => $_ENV['enable_ticket'],
-            'enable_reg_im' => $_ENV['enable_reg_im'],
+
             'enable_flag' => $_ENV['enable_flag'],
             'enable_kill' => $_ENV['enable_kill'],
             'enable_change_email' => $_ENV['enable_change_email'],
-            'custom_invite_price' => $_ENV['custom_invite_price'],
 
             'enable_telegram' => $_ENV['enable_telegram'],
             'telegram_bot' => $_ENV['telegram_bot'],
-            'use_new_telegram_bot' => $_ENV['use_new_telegram_bot'],
 
             'enable_telegram_login' => $_ENV['enable_telegram_login'],
 
@@ -129,8 +125,6 @@ final class Config
             'auto_detect_ban_number' => $_ENV['auto_detect_ban_number'],
             'auto_detect_ban_time' => $_ENV['auto_detect_ban_time'],
             'auto_detect_ban' => $_ENV['auto_detect_ban'],
-
-            'userCenterClient' => $_ENV['userCenterClient'],
 
             'sentry_dsn' => ! isset($_ENV['sentry_dsn']) ? $_ENV['sentry_dsn'] : null,
         ];

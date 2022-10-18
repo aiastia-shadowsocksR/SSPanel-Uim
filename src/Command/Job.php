@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Models\Ann;
 use App\Models\BlockIp;
 use App\Models\Bought;
 use App\Models\DetectBanLog;
@@ -12,17 +13,19 @@ use App\Models\EmailQueue;
 use App\Models\EmailVerify;
 use App\Models\Ip;
 use App\Models\Node;
-use App\Models\NodeInfoLog;
 use App\Models\NodeOnlineLog;
 use App\Models\PasswordReset;
+use App\Models\Setting;
 use App\Models\Shop;
 use App\Models\StreamMedia;
 use App\Models\TelegramSession;
 use App\Models\Token;
 use App\Models\UnblockIp;
 use App\Models\User;
+use App\Models\UserHourlyUsage;
 use App\Models\UserSubscribeLog;
-use App\Services\Config;
+use App\Services\Analytics;
+use App\Services\DB;
 use App\Services\Mail;
 use App\Utils\DatatablesHelper;
 use App\Utils\Telegram;
@@ -33,8 +36,7 @@ final class Job extends Command
 {
     public $description = <<<EOL
 ├─=: php xcat Job [选项]
-│ ├─ SendMail                - 处理邮件队列
-│ ├─ DailyJob                - 每日任务
+│ ├─ DailyJob                - 每日任务，每天
 │ ├─ CheckJob                - 检查任务，每分钟
 │ ├─ UserJob                 - 用户账户相关任务，每小时
 EOL;
@@ -54,36 +56,6 @@ EOL;
     }
 
     /**
-     * 发邮件
-     *
-     * @return void
-     */
-    public function SendMail()
-    {
-        if (file_exists(BASE_PATH . '/storage/email_queue')) {
-            echo '程序正在运行中' . PHP_EOL;
-            return false;
-        }
-        $myfile = fopen(BASE_PATH . '/storage/email_queue', 'wb+') or die('Unable to open file!');
-        $txt = '1';
-        fwrite($myfile, $txt);
-        fclose($myfile);
-        // 分块处理，节省内存
-        EmailQueue::chunkById(1000, static function ($email_queues): void {
-            foreach ($email_queues as $email_queue) {
-                try {
-                    Mail::send($email_queue->to_email, $email_queue->subject, $email_queue->template, json_decode($email_queue->array), []);
-                } catch (Exception $e) {
-                    echo $e->getMessage();
-                }
-                echo '发送邮件至 ' . $email_queue->to_email . PHP_EOL;
-                $email_queue->delete();
-            }
-        });
-        unlink(BASE_PATH . '/storage/email_queue');
-    }
-
-    /**
      * 每日任务
      */
     public function DailyJob(): void
@@ -92,29 +64,30 @@ EOL;
 
         // ------- 重置节点流量
         Node::where('bandwidthlimit_resetday', date('d'))->update(['node_bandwidth' => 0]);
+        // ------- 重置节点流量
 
         // ------- 清理各表记录
-        UserSubscribeLog::where('request_time', '<', date('Y-m-d H:i:s', time() - 86400 * (int) $_ENV['subscribeLog_keep_days']))->delete();
-        Token::where('expire_time', '<', time())->delete();
-        NodeInfoLog::where('log_time', '<', time() - 86400 * 3)->delete();
-        NodeOnlineLog::where('log_time', '<', time() - 86400 * 3)->delete();
-        DetectLog::where('datetime', '<', time() - 86400 * 3)->delete();
-        EmailVerify::where('expire_in', '<', time() - 86400 * 3)->delete();
-        PasswordReset::where('expire_time', '<', time() - 86400 * 3)->delete();
-        Ip::where('datetime', '<', time() - 300)->delete();
-        UnblockIp::where('datetime', '<', time() - 300)->delete();
-        BlockIp::where('datetime', '<', time() - 86400)->delete();
-        StreamMedia::where('created_at', '<', time() - 86400 * 24)->delete();
-        TelegramSession::where('datetime', '<', time() - 900)->delete();
+        UserSubscribeLog::where('request_time', '<', date('Y-m-d H:i:s', \time() - 86400 * (int) $_ENV['subscribeLog_keep_days']))->delete();
+        UserHourlyUsage::where('datetime', '<', \time() - 86400 * 30)->delete();
+        Token::where('expire_time', '<', \time())->delete();
+        NodeOnlineLog::where('log_time', '<', \time() - 86400 * 3)->delete();
+        DetectLog::where('datetime', '<', \time() - 86400 * 3)->delete();
+        EmailVerify::where('expire_in', '<', \time() - 86400 * 3)->delete();
+        EmailQueue::where('time', '<', \time() - 86400 * 3)->delete();
+        PasswordReset::where('expire_time', '<', \time() - 86400 * 3)->delete();
+        Ip::where('datetime', '<', \time() - 300)->delete();
+        UnblockIp::where('datetime', '<', \time() - 300)->delete();
+        BlockIp::where('datetime', '<', \time() - 86400)->delete();
+        StreamMedia::where('created_at', '<', \time() - 86400 * 30)->delete();
+        TelegramSession::where('datetime', '<', \time() - 900)->delete();
         // ------- 清理各表记录
 
         // ------- 重置自增 ID
         $db = new DatatablesHelper();
         Tools::resetAutoIncrement($db, 'node_online_log');
-        Tools::resetAutoIncrement($db, 'node_info');
         // ------- 重置自增 ID
 
-        // ------- 用户流量重置
+        // ------- 付费用户流量重置
         // 取消已下架的商品不支持重置的限制，因为目前没有库存限制
         $shopid = Shop::where('content->reset', '<>', 0)->where('content->reset_value', '<>', 0)->where('content->reset_exp', '<>', 0)->pluck('id')->toArray();
         // 用 UserID 分组倒序取最新一条包含周期重置商品的购买记录
@@ -146,46 +119,86 @@ EOL;
                         'text' => '您好，根据您所订购的订单 ID:' . $bought->id . '，流量已经被重置为' . $shop->resetValue() . 'GB',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
             }
         }
-        // ------- 用户流量重置
+        // ------- 付费用户流量重置
 
-        User::chunkById(1000, static function ($users) use ($bought_users): void {
-            foreach ($users as $user) {
-                /** @var User $user */
-                $user->last_day_t = $user->u + $user->d;
-                $user->save();
-                if (in_array($user->id, $bought_users)) {
-                    continue;
-                }
-                if (date('d') === $user->auto_reset_day) {
-                    $user->u = 0;
-                    $user->d = 0;
-                    $user->last_day_t = 0;
-                    $user->transfer_enable = $user->auto_reset_bandwidth * 1024 * 1024 * 1024;
-                    $user->save();
-                    $user->sendMail(
-                        $_ENV['appName'] . '-您的免费流量被重置了',
-                        'news/warn.tpl',
-                        [
-                            'text' => '您好，您的免费流量已经被重置为' . $user->auto_reset_bandwidth . 'GB',
-                        ],
-                        [],
-                        $_ENV['email_queue']
-                    );
-                }
+        // ------- 免费用户流量重置
+        $users = User::all();
+        foreach ($users as $user) {
+            /** @var User $user */
+            $user->last_day_t = $user->u + $user->d;
+            $user->save();
+            if (\in_array($user->id, $bought_users)) {
+                continue;
             }
-        });
+            if (date('d') === $user->auto_reset_day) {
+                $user->u = 0;
+                $user->d = 0;
+                $user->last_day_t = 0;
+                $user->transfer_enable = $user->auto_reset_bandwidth * 1024 * 1024 * 1024;
+                $user->save();
+                $user->sendMail(
+                    $_ENV['appName'] . '-您的免费流量被重置了',
+                    'news/warn.tpl',
+                    [
+                        'text' => '您好，您的免费流量已经被重置为' . $user->auto_reset_bandwidth . 'GB',
+                    ],
+                    [],
+                    true
+                );
+            }
+        }
+        // ------- 免费用户流量重置
+
+        // ------- 用户每日流量报告
+        $ann_latest_raw = Ann::orderBy('date', 'desc')->first();
+        $ann_latest = $ann_latest_raw->content . '<br><br>';
+
+        $lastday_total = 0;
+
+        foreach ($users as $user) {
+            $lastday_total += $user->u + $user->d - $user->last_day_t;
+            $user->sendDailyNotification($ann_latest);
+        }
+        // ------- 用户每日流量报告
 
         // ------- 更新 IP 库
         (new Tool($this->argv))->initQQWry();
         // ------- 更新 IP 库
 
-        // ------- 发送每日系统运行报告
-        if (Config::getconfig('Telegram.bool.DailyJob')) {
-            Telegram::send(Config::getconfig('Telegram.string.DailyJob'));
+        // ------- 发送系统运行状况通知
+        $sts = new Analytics();
+        if (Setting::obtain('telegram_diary')) {
+            try {
+                Telegram::send(
+                    str_replace(
+                        [
+                            '%getTodayCheckinUser%',
+                            '%lastday_total%',
+                        ],
+                        [
+                            $sts->getTodayCheckinUser(),
+                            Tools::flowAutoShow($lastday_total),
+                        ],
+                        Setting::obtain('telegram_diary_text')
+                    )
+                );
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
+        }
+        // ------- 发送系统运行状况通知
+
+        // ------- 发送每日任务运行报告
+        if (Setting::obtain('telegram_daily_job')) {
+            try {
+                Telegram::send(Setting::obtain('telegram_daily_job_text'));
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
         }
         // ------- 发送每日系统运行报告
     }
@@ -195,6 +208,37 @@ EOL;
      */
     public function CheckJob(): void
     {
+        //记录当前时间戳
+        $timestatmp = \time();
+        //邮件队列处理
+        while (true) {
+            if (\time() - $timestatmp > 59) {
+                echo '邮件队列处理超时，已跳过' . PHP_EOL;
+                break;
+            }
+            DB::beginTransaction();
+            $email_queues_raw = DB::select('SELECT * FROM email_queue LIMIT 1 FOR UPDATE SKIP LOCKED');
+            if (count($email_queues_raw) === 0) {
+                DB::commit();
+                break;
+            }
+            $email_queues = array_map(static function ($value) {
+                return (array) $value;
+            }, $email_queues_raw);
+            $email_queue = $email_queues[0];
+            echo '发送邮件至 ' . $email_queue['to_email'] . PHP_EOL;
+            DB::delete('DELETE FROM email_queue WHERE id = ?', [$email_queue['id']]);
+            if (Tools::isEmail($email_queue['to_email'])) {
+                try {
+                    Mail::send($email_queue['to_email'], $email_queue['subject'], $email_queue['template'], \json_decode($email_queue['array']), []);
+                } catch (Exception $e) {
+                    echo $e->getMessage();
+                }
+            } else {
+                echo $email_queue['to_email'] . ' 邮箱格式错误，已跳过' . PHP_EOL;
+            }
+            DB::commit();
+        }
         //节点掉线检测
         if ($_ENV['enable_detect_offline'] === true) {
             echo '节点掉线检测开始' . PHP_EOL;
@@ -231,16 +275,16 @@ EOL;
                                 'text' => '管理员您好，系统发现节点 ' . $node->name . ' 掉线了，请您及时处理。',
                             ],
                             [],
-                            $_ENV['email_queue']
+                            true
                         );
                         $notice_text = str_replace(
                             '%node_name%',
                             $node->name,
-                            Config::getconfig('Telegram.string.NodeOffline')
+                            Setting::obtain('telegram_node_offline_text')
                         );
                     }
 
-                    if (Config::getconfig('Telegram.bool.NodeOffline')) {
+                    if (Setting::obtain('telegram_node_offline')) {
                         Telegram::send($notice_text);
                     }
 
@@ -276,16 +320,16 @@ EOL;
                                 'text' => '管理员您好，系统发现节点 ' . $node->name . ' 恢复上线了。',
                             ],
                             [],
-                            $_ENV['email_queue']
+                            true
                         );
                         $notice_text = str_replace(
                             '%node_name%',
                             $node->name,
-                            Config::getconfig('Telegram.string.NodeOnline')
+                            Setting::obtain('telegram_node_online_text')
                         );
                     }
 
-                    if (Config::getconfig('Telegram.bool.NodeOnline')) {
+                    if (Setting::obtain('telegram_node_online')) {
                         Telegram::send($notice_text);
                     }
 
@@ -301,7 +345,7 @@ EOL;
         foreach ($nodes as $node) {
             /** @var Node $node */
             $server = $node->getOutAddress();
-            if (! Tools::isIp($server) && $node->changeNodeIp($server)) {
+            if (! Tools::isIPv4($server) && $node->changeNodeIp($server)) {
                 $node->save();
             }
         }
@@ -314,7 +358,21 @@ EOL;
     {
         $users = User::all();
         foreach ($users as $user) {
-            if (strtotime($user->expire_in) < time() && $user->expire_notified === false) {
+            $transfer_total = $user->transfer_total;
+            $transfer_total_last = UserHourlyUsage::where('user_id', $user->id)->orderBy('id', 'desc')->first();
+            if ($transfer_total_last === null) {
+                $transfer_total_last = 0;
+            } else {
+                $transfer_total_last = $transfer_total_last->traffic;
+            }
+            $trafficlog = new UserHourlyUsage();
+            $trafficlog->user_id = $user->id;
+            $trafficlog->traffic = $transfer_total;
+            $trafficlog->hourly_usage = $transfer_total - $transfer_total_last;
+            $trafficlog->datetime = \time();
+            $trafficlog->save();
+
+            if (strtotime($user->expire_in) < \time() && $user->expire_notified === false) {
                 $user->transfer_enable = 0;
                 $user->u = 0;
                 $user->d = 0;
@@ -326,11 +384,11 @@ EOL;
                         'text' => '您好，系统发现您的账号已经过期了。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $user->expire_notified = true;
                 $user->save();
-            } elseif (strtotime($user->expire_in) > time() && $user->expire_notified === true) {
+            } elseif (strtotime($user->expire_in) > \time() && $user->expire_notified === true) {
                 $user->expire_notified = false;
                 $user->save();
             }
@@ -364,7 +422,7 @@ EOL;
                             'text' => '您好，系统发现您剩余流量已经低于 ' . $_ENV['notify_limit_value'] . $unit_text . ' 。',
                         ],
                         [],
-                        $_ENV['email_queue']
+                        true
                     );
                     if ($result) {
                         $user->traffic_notified = true;
@@ -378,7 +436,7 @@ EOL;
 
             if (
                 $_ENV['account_expire_delete_days'] >= 0 &&
-                strtotime($user->expire_in) + $_ENV['account_expire_delete_days'] * 86400 < time() &&
+                strtotime($user->expire_in) + $_ENV['account_expire_delete_days'] * 86400 < \time() &&
                 $user->money <= $_ENV['auto_clean_min_money']
             ) {
                 $user->sendMail(
@@ -388,7 +446,7 @@ EOL;
                         'text' => '您好，系统发现您的账户已经过期 ' . $_ENV['account_expire_delete_days'] . ' 天了，帐号已经被删除。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $user->killUser();
                 continue;
@@ -399,7 +457,7 @@ EOL;
                 max(
                     $user->last_check_in_time,
                     strtotime($user->reg_date)
-                ) + ($_ENV['auto_clean_uncheck_days'] * 86400) < time() &&
+                ) + ($_ENV['auto_clean_uncheck_days'] * 86400) < \time() &&
                 $user->class === 0 &&
                 $user->money <= $_ENV['auto_clean_min_money']
             ) {
@@ -410,7 +468,7 @@ EOL;
                         'text' => '您好，系统发现您的账号已经 ' . $_ENV['auto_clean_uncheck_days'] . ' 天没签到了，帐号已经被删除。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $user->killUser();
                 continue;
@@ -418,7 +476,7 @@ EOL;
 
             if (
                 $_ENV['auto_clean_unused_days'] > 0 &&
-                max($user->t, strtotime($user->reg_date)) + ($_ENV['auto_clean_unused_days'] * 86400) < time() &&
+                max($user->t, strtotime($user->reg_date)) + ($_ENV['auto_clean_unused_days'] * 86400) < \time() &&
                 $user->class === 0 &&
                 $user->money <= $_ENV['auto_clean_min_money']
             ) {
@@ -429,7 +487,7 @@ EOL;
                         'text' => '您好，系统发现您的账号已经 ' . $_ENV['auto_clean_unused_days'] . ' 天没使用了，帐号已经被删除。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $user->killUser();
                 continue;
@@ -437,7 +495,7 @@ EOL;
 
             if (
                 $user->class !== 0 &&
-                strtotime($user->class_expire) < time() &&
+                strtotime($user->class_expire) < \time() &&
                 strtotime($user->class_expire) > 1420041600
             ) {
                 $text = '您好，系统发现您的账号等级已经过期了。';
@@ -456,7 +514,7 @@ EOL;
                         'text' => $text,
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $user->class = 0;
             }
@@ -465,7 +523,7 @@ EOL;
             if ($user->enable === 0) {
                 $logs = DetectBanLog::where('user_id', $user->id)->orderBy('id', 'desc')->first();
                 if ($logs !== null) {
-                    if (($logs->end_time + $logs->ban_time * 60) <= time()) {
+                    if (($logs->end_time + $logs->ban_time * 60) <= \time()) {
                         $user->enable = 1;
                     }
                 }
@@ -475,7 +533,7 @@ EOL;
         }
 
         //自动续费
-        $boughts = Bought::where('renew', '<', time() + 60)->where('renew', '<>', 0)->get();
+        $boughts = Bought::where('renew', '<', \time() + 60)->where('renew', '<>', 0)->get();
         foreach ($boughts as $bought) {
             /** @var Bought $bought */
             $user = $bought->user();
@@ -493,7 +551,7 @@ EOL;
                         'text' => '您好，系统为您自动续费商品时，发现该商品已被下架，为能继续正常使用，建议您登录用户面板购买新的商品。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $bought->is_notified = true;
                 $bought->save();
@@ -509,8 +567,8 @@ EOL;
                 $bought_new = new Bought();
                 $bought_new->userid = $user->id;
                 $bought_new->shopid = $shop->id;
-                $bought_new->datetime = time();
-                $bought_new->renew = time() + $shop->auto_renew * 86400;
+                $bought_new->datetime = \time();
+                $bought_new->renew = \time() + $shop->auto_renew * 86400;
                 $bought_new->price = $shop->price;
                 $bought_new->coupon = '';
                 $bought_new->save();
@@ -522,7 +580,7 @@ EOL;
                         'text' => '您好，系统已经为您自动续费，商品名：' . $shop->name . ',金额:' . $shop->price . ' 元。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
 
                 $bought->is_notified = true;
@@ -535,7 +593,7 @@ EOL;
                         'text' => '您好，系统为您自动续费商品名：' . $shop->name . ',金额:' . $shop->price . ' 元 时，发现您余额不足，请及时充值。充值后请稍等系统便会自动为您续费。',
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
                 $bought->is_notified = true;
                 $bought->save();

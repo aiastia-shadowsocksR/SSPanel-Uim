@@ -11,7 +11,7 @@ final class Check
         $res = [];
         $res['ret'] = 0;
 
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! Tools::isEmail($email)) {
             $res['msg'] = '邮箱不规范';
             return $res;
         }
@@ -27,13 +27,13 @@ final class Check
                 return $res;
             case 1:
                 // 白名单
-                if (in_array($mail_suffix, $mail_filter_list)) {
+                if (\in_array($mail_suffix, $mail_filter_list)) {
                     $res['ret'] = 1;
                 }
                 return $res;
             case 2:
                 // 黑名单
-                if (! in_array($mail_suffix, $mail_filter_list)) {
+                if (! \in_array($mail_suffix, $mail_filter_list)) {
                     $res['ret'] = 1;
                 }
                 return $res;

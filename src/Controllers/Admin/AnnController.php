@@ -43,7 +43,7 @@ final class AnnController extends BaseController
         $query = Ann::getTableDataFromAdmin(
             $request,
             static function (&$order_field): void {
-                if (in_array($order_field, ['op'])) {
+                if (\in_array($order_field, ['op'])) {
                     $order_field = 'id';
                 }
             }
@@ -110,10 +110,7 @@ final class AnnController extends BaseController
             }
         }
         if ($issend === 1) {
-            $beginSend = $page * $_ENV['sendPageLimit'];
             $users = User::where('class', '>=', $vip)
-                ->skip($beginSend)
-                ->limit($_ENV['sendPageLimit'])
                 ->get();
 
             foreach ($users as $user) {
@@ -125,15 +122,8 @@ final class AnnController extends BaseController
                         'text' => $content,
                     ],
                     [],
-                    $_ENV['email_queue']
+                    true
                 );
-            }
-
-            if (count($users) === $_ENV['sendPageLimit']) {
-                return $response->withJson([
-                    'ret' => 2,
-                    'msg' => $request->getParam('page') + 1,
-                ]);
             }
         }
 

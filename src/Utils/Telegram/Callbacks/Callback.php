@@ -17,6 +17,7 @@ use App\Utils\QQWry;
 use App\Utils\Telegram\Reply;
 use App\Utils\Telegram\TelegramTools;
 use App\Utils\Tools;
+use Telegram\Bot\FileUpload\InputFile;
 
 final class Callback
 {
@@ -59,7 +60,6 @@ final class Callback
      * 源消息是否可编辑
      */
     private $AllowEditMessage;
-
     public function __construct(\Telegram\Bot\Api $bot, \Telegram\Bot\Objects\CallbackQuery $Callback)
     {
         $this->bot = $bot;
@@ -73,20 +73,19 @@ final class Callback
         $this->Callback = $Callback;
         $this->MessageID = $Callback->getMessage()->getMessageId();
         $this->CallbackData = $Callback->getData();
-        $this->AllowEditMessage = time() < $Callback->getMessage()->getDate() + 172800;
+        $this->AllowEditMessage = \time() < $Callback->getMessage()->getDate() + 172800;
 
         if ($this->ChatID < 0 && $_ENV['telegram_group_quiet'] === true) {
             // 群组中不回应
             return;
         }
-
         switch (true) {
             case strpos($this->CallbackData, 'user.') === 0:
                 // 用户相关
                 $this->userCallback();
                 break;
             default:
-                // 游客回调数据处理
+                //游客回调数据处理
                 $this->guestCallback();
                 break;
         }
@@ -97,7 +96,7 @@ final class Callback
      *
      * @return array
      */
-    public static function getGuestIndexKeyboard(): array
+    public static function getGuestIndexKeyboard()
     {
         $Keyboard = [
             [
@@ -176,7 +175,7 @@ final class Callback
                     'text' => $_ENV['telegram_general_pricing'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => self::getGuestIndexKeyboard()['keyboard'],
                         ]
@@ -189,7 +188,7 @@ final class Callback
                     'text' => $_ENV['telegram_general_terms'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => self::getGuestIndexKeyboard()['keyboard'],
                         ]
@@ -203,7 +202,7 @@ final class Callback
                     'text' => $temp['text'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -216,7 +215,7 @@ final class Callback
 
     public static function getUserIndexKeyboard($user)
     {
-        $checkin = (! $user->isAbleToCheckin() ? '已签到' : '签到');
+        $checkin = (!$user->isAbleToCheckin() ? '已签到' : '签到');
         $Keyboard = [
             [
                 [
@@ -250,11 +249,11 @@ final class Callback
         $text .= Reply::getUserInfo($user);
         $text .= PHP_EOL;
         $text .= '流量重置时间：' . $user->validUseLoop();
-        if (Config::getconfig('Telegram.bool.show_group_link')) {
+        if (Setting::obtain('telegram_show_group_link')) {
             $Keyboard[] = [
                 [
                     'text' => '加入用户群',
-                    'url' => Config::getconfig('Telegram.string.group_link'),
+                    'url' => Setting::obtain('telegram_group_link'),
                 ],
             ];
         }
@@ -297,7 +296,7 @@ final class Callback
                 break;
             case 'checkin':
                 // 签到
-                if ($Operate[2] !== $this->triggerUser['id']) {
+                if ((int) $Operate[2] !== $this->triggerUser['id']) {
                     $this->answerCallbackQuery([
                         'text' => '您好，您无法操作他人的账户.',
                         'show_alert' => true,
@@ -318,7 +317,7 @@ final class Callback
                     'parse_mode' => 'HTML',
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -386,8 +385,8 @@ final class Callback
         ];
         $CallbackDataExplode = explode('|', $this->CallbackData);
         $Operate = explode('.', $CallbackDataExplode[0]);
-        $op_2 = $Operate[2];
-        switch ($op_2) {
+        $OpEnd = end($Operate);
+        switch ($OpEnd) {
             case 'login_log':
                 // 登录记录
                 $iplocation = new QQWry();
@@ -396,7 +395,7 @@ final class Callback
                 foreach ($totallogin as $single) {
                     $location = $iplocation->getlocation($single->ip);
                     $loginiplocation = iconv('gbk', 'utf-8//IGNORE', $location['country'] . $location['area']);
-                    if (! in_array($loginiplocation, $userloginip)) {
+                    if (!\in_array($loginiplocation, $userloginip)) {
                         $userloginip[] = $loginiplocation;
                     }
                 }
@@ -408,7 +407,7 @@ final class Callback
                     'disable_web_page_preview' => false,
                     'parse_mode' => 'HTML',
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $back,
                         ]
@@ -418,7 +417,7 @@ final class Callback
             case 'usage_log':
                 // 使用记录
                 $iplocation = new QQWry();
-                $total = Ip::where('datetime', '>=', time() - 300)->where('userid', '=', $this->User->id)->get();
+                $total = Ip::where('datetime', '>=', \time() - 300)->where('userid', '=', $this->User->id)->get();
                 $userip = [];
                 foreach ($total as $single) {
                     $single->ip = Tools::getRealIp($single->ip);
@@ -437,7 +436,7 @@ final class Callback
                     'disable_web_page_preview' => false,
                     'parse_mode' => 'HTML',
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $back,
                         ]
@@ -459,7 +458,7 @@ final class Callback
                     'disable_web_page_preview' => false,
                     'parse_mode' => 'HTML',
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $back,
                         ]
@@ -483,7 +482,7 @@ final class Callback
                     'disable_web_page_preview' => false,
                     'parse_mode' => 'HTML',
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $back,
                         ]
@@ -496,7 +495,7 @@ final class Callback
                     'text' => $temp['text'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -590,8 +589,8 @@ final class Callback
         ];
         $CallbackDataExplode = explode('|', $this->CallbackData);
         $Operate = explode('.', $CallbackDataExplode[0]);
-        $op_2 = $Operate[2];
-        switch ($op_2) {
+        $OpEnd = end($Operate);
+        switch ($OpEnd) {
             case 'update_link':
                 // 重置订阅链接
                 $this->User->cleanLink();
@@ -604,7 +603,7 @@ final class Callback
                     'text' => $temp['text'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -629,7 +628,7 @@ final class Callback
                     'text' => $temp['text'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -640,7 +639,7 @@ final class Callback
                 // 加密方式更改
                 $keyboard = $back;
                 if (isset($CallbackDataExplode[1])) {
-                    if (in_array($CallbackDataExplode[1], Config::getSupportParam('method'))) {
+                    if (\in_array($CallbackDataExplode[1], Config::getSupportParam('method'))) {
                         $temp = $this->User->setMethod($CallbackDataExplode[1]);
                         if ($temp['ok'] === true) {
                             $text = '您当前的加密方式为：' . $this->User->method . PHP_EOL . PHP_EOL . $temp['msg'];
@@ -670,7 +669,7 @@ final class Callback
                     'text' => $text,
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $keyboard,
                         ]
@@ -681,7 +680,7 @@ final class Callback
                 // 协议更改
                 $keyboard = $back;
                 if (isset($CallbackDataExplode[1])) {
-                    if (in_array($CallbackDataExplode[1], Config::getSupportParam('protocol'))) {
+                    if (\in_array($CallbackDataExplode[1], Config::getSupportParam('protocol'))) {
                         $temp = $this->User->setProtocol($CallbackDataExplode[1]);
                         if ($temp['ok'] === true) {
                             $text = '您当前的协议为：' . $this->User->protocol . PHP_EOL . PHP_EOL . $temp['msg'];
@@ -711,7 +710,7 @@ final class Callback
                     'text' => $text,
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $keyboard,
                         ]
@@ -722,7 +721,7 @@ final class Callback
                 // 混淆更改
                 $keyboard = $back;
                 if (isset($CallbackDataExplode[1])) {
-                    if (in_array($CallbackDataExplode[1], Config::getSupportParam('obfs'))) {
+                    if (\in_array($CallbackDataExplode[1], Config::getSupportParam('obfs'))) {
                         $temp = $this->User->setObfs($CallbackDataExplode[1]);
                         if ($temp['ok'] === true) {
                             $text = '您当前的协议为：' . $this->User->obfs . PHP_EOL . PHP_EOL . $temp['msg'];
@@ -752,7 +751,7 @@ final class Callback
                     'text' => $text,
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $keyboard,
                         ]
@@ -770,8 +769,8 @@ final class Callback
                     ],
                     $back[0],
                 ];
-                $op_3 = $Operate[3];
-                switch ($op_3) {
+                $OpEnd = end($Operate);
+                switch ($OpEnd) {
                     case 'update':
                         $this->User->sendDailyMail = ($this->User->sendDailyMail === 0 ? 1 : 0);
                         if ($this->User->save()) {
@@ -794,7 +793,7 @@ final class Callback
                     'text' => $text,
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $keyboard,
                         ]
@@ -805,7 +804,7 @@ final class Callback
                 // Telegram 账户解绑
                 $this->AllowEditMessage = false;
                 $text = '发送 **/unbind 账户邮箱** 进行解绑.';
-                if (Config::getconfig('Telegram.bool.unbind_kick_member') === true) {
+                if (Setting::obtain('telegram_unbind_kick_member') === true) {
                     $text .= PHP_EOL . PHP_EOL . '根据管理员的设定，您解绑账户将会被自动移出用户群.';
                 }
                 $sendMessage = [
@@ -818,30 +817,17 @@ final class Callback
                 break;
             case 'unban':
                 // 群组解封
-                if (isset($Operate[3]) && $Operate[3] === 'update') {
-                    TelegramTools::sendPost(
-                        'unbanChatMember',
-                        [
-                            'chat_id' => $_ENV['telegram_chatid'],
-                            'user_id' => $this->triggerUser['id'],
-                        ]
-                    );
-                    $this->answerCallbackQuery([
-                        'text' => '已提交解封，如您仍无法加入群组，请联系管理员.',
-                        'show_alert' => true,
-                    ]);
-                }
                 $sendMessage = [
                     'text' => '如果您已经身处用户群，请勿随意点击解封，否则会导致您被移除出群组.',
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => [
                                 [
                                     [
                                         'text' => '点击提交解封',
-                                        'callback_data' => 'user.edit.unban.update',
+                                        'callback_data' => 'user.edit.unban_update',
                                     ],
                                 ],
                                 $back[0],
@@ -849,6 +835,20 @@ final class Callback
                         ]
                     ),
                 ];
+                break;
+            case 'unban_update':
+                // 提交群组解封
+                TelegramTools::sendPost(
+                    'unbanChatMember',
+                    [
+                        'chat_id' => $_ENV['telegram_chatid'],
+                        'user_id' => $this->triggerUser['id'],
+                    ]
+                );
+                $this->answerCallbackQuery([
+                    'text' => '已提交解封，如您仍无法加入群组，请联系管理员.',
+                    'show_alert' => true,
+                ]);
                 break;
             default:
                 $temp = $this->getUserEditKeyboard();
@@ -862,7 +862,7 @@ final class Callback
                     'text' => $text,
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -1001,16 +1001,24 @@ final class Callback
             switch ($CallbackDataExplode[1]) {
                 case '?clash=1':
                     $temp['text'] = '您的 Clash 配置文件.' . PHP_EOL . '同时，您也可使用该订阅链接：' . $UserApiUrl . $CallbackDataExplode[1];
-                    $filename = 'Clash_' . $token . '_' . time() . '.yaml';
+                    $filename = 'Clash_' . $token . '_' . \time() . '.yaml';
                     $filepath = BASE_PATH . '/storage/SendTelegram/' . $filename;
                     $fh = fopen($filepath, 'w+');
-                    $string = LinkController::getClash($this->User, 1, [], [], false);
+                    $opts = [
+                        'clash' => 1,
+                    ];
+                    $Rule = [
+                        'type' => 'all',
+                        'is_mu' => 1,
+                        'extend' => true,
+                    ];
+                    $string = LinkController::getClash($this->User, 1, $opts, $Rule);
                     fwrite($fh, $string);
                     fclose($fh);
                     $this->bot->sendDocument(
                         [
                             'chat_id' => $this->ChatID,
-                            'document' => $filepath,
+                            'document' => InputFile::create($filepath),
                             'caption' => $temp['text'],
                         ]
                     );
@@ -1018,16 +1026,24 @@ final class Callback
                     break;
                 case '?quantumult=3':
                     $temp['text'] = '点击打开配置文件，选择分享 拷贝到 Quantumult，选择更新配置.';
-                    $filename = 'Quantumult_' . $token . '_' . time() . '.conf';
+                    $filename = 'Quantumult_' . $token . '_' . \time() . '.conf';
                     $filepath = BASE_PATH . '/storage/SendTelegram/' . $filename;
                     $fh = fopen($filepath, 'w+');
-                    $string = LinkController::GetQuantumult($this->User, 3, [], [], false);
+                    $opts = [
+                        'quantumult' => 3,
+                    ];
+                    $Rule = [
+                        'type' => 'all',
+                        'is_mu' => 1,
+                        'extend' => true,
+                    ];
+                    $string = LinkController::GetQuantumult($this->User, 3, $opts, $Rule);
                     fwrite($fh, $string);
                     fclose($fh);
                     $this->bot->sendDocument(
                         [
                             'chat_id' => $this->ChatID,
-                            'document' => $filepath,
+                            'document' => InputFile::create($filepath),
                             'caption' => $temp['text'],
                         ]
                     );
@@ -1035,16 +1051,24 @@ final class Callback
                     break;
                 case '?surge=2':
                     $temp['text'] = '点击打开配置文件，选择分享 拷贝到 Surge，点击启动.';
-                    $filename = 'Surge_' . $token . '_' . time() . '.conf';
+                    $filename = 'Surge_' . $token . '_' . \time() . '.conf';
                     $filepath = BASE_PATH . '/storage/SendTelegram/' . $filename;
                     $fh = fopen($filepath, 'w+');
-                    $string = LinkController::getSurge($this->User, 2, [], [], false);
+                    $opts = [
+                        'surge' => 2,
+                    ];
+                    $Rule = [
+                        'type' => 'ss',
+                        'is_mu' => 1,
+                        'extend' => true,
+                    ];
+                    $string = LinkController::getSurge($this->User, 2, $opts, $Rule);
                     fwrite($fh, $string);
                     fclose($fh);
                     $this->bot->sendDocument(
                         [
                             'chat_id' => $this->ChatID,
-                            'document' => $filepath,
+                            'document' => InputFile::create($filepath),
                             'caption' => $temp['text'],
                         ]
                     );
@@ -1052,16 +1076,24 @@ final class Callback
                     break;
                 case '?surge=3':
                     $temp['text'] = '点击打开配置文件，选择分享 拷贝到 Surge，点击启动.';
-                    $filename = 'Surge_' . $token . '_' . time() . '.conf';
+                    $filename = 'Surge_' . $token . '_' . \time() . '.conf';
                     $filepath = BASE_PATH . '/storage/SendTelegram/' . $filename;
                     $fh = fopen($filepath, 'w+');
-                    $string = LinkController::getSurge($this->User, 3, [], [], false);
+                    $opts = [
+                        'surge' => 3,
+                    ];
+                    $Rule = [
+                        'type' => 'ss',
+                        'is_mu' => 1,
+                        'extend' => true,
+                    ];
+                    $string = LinkController::getSurge($this->User, 3, $opts, $Rule);
                     fwrite($fh, $string);
                     fclose($fh);
                     $this->bot->sendDocument(
                         [
                             'chat_id' => $this->ChatID,
-                            'document' => $filepath,
+                            'document' => InputFile::create($filepath),
                             'caption' => $temp['text'],
                         ]
                     );
@@ -1078,7 +1110,7 @@ final class Callback
             'text' => $temp['text'],
             'disable_web_page_preview' => false,
             'reply_to_message_id' => null,
-            'reply_markup' => json_encode(
+            'reply_markup' => \json_encode(
                 [
                     'inline_keyboard' => $temp['keyboard'],
                 ]
@@ -1098,7 +1130,7 @@ final class Callback
     {
         $paybacks_sum = Payback::where('ref_by', $this->User->id)->sum('ref_get');
 
-        if (! is_null($paybacks_sum)) {
+        if (!is_null($paybacks_sum)) {
             $paybacks_sum = 0;
         }
         $invitation = Setting::getClass('invite');
@@ -1138,8 +1170,8 @@ final class Callback
     {
         $CallbackDataExplode = explode('|', $this->CallbackData);
         $Operate = explode('.', $CallbackDataExplode[0]);
-        $op_2 = $Operate[2];
-        switch ($op_2) {
+        $OpEnd = end($Operate);
+        switch ($OpEnd) {
             case 'get':
                 $this->AllowEditMessage = false;
                 $code = InviteCode::where('user_id', $this->User->id)->first();
@@ -1162,7 +1194,7 @@ final class Callback
                     'text' => $temp['text'],
                     'disable_web_page_preview' => false,
                     'reply_to_message_id' => null,
-                    'reply_markup' => json_encode(
+                    'reply_markup' => \json_encode(
                         [
                             'inline_keyboard' => $temp['keyboard'],
                         ]
@@ -1202,7 +1234,7 @@ final class Callback
             $temp['keyboard'] = [
                 [
                     [
-                        'text' => (! $this->User->isAbleToCheckin() ? '已签到' : '签到'),
+                        'text' => (!$this->User->isAbleToCheckin() ? '已签到' : '签到'),
                         'callback_data' => 'user.checkin.' . $this->triggerUser['id'],
                     ],
                 ],
@@ -1212,7 +1244,7 @@ final class Callback
             'text' => $temp['text'] . PHP_EOL . PHP_EOL . $checkin['msg'],
             'reply_to_message_id' => $this->MessageID,
             'parse_mode' => 'Markdown',
-            'reply_markup' => json_encode(
+            'reply_markup' => \json_encode(
                 [
                     'inline_keyboard' => $temp['keyboard'],
                 ]
